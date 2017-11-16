@@ -2,7 +2,7 @@ package Handlers;
 
 import Grafo.Aresta;
 import Grafo.KeyNotFound;
-import Grafo.MetodosGrafo;
+import Grafo.Handler;
 import Grafo.Vertice;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,14 +14,12 @@ import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
-public class ClientHandler {
-
-    private static String args1[] = {"localhost", "4242"};
+public class Client {
 
     static Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
-        connection(args1);
+        connection(args);
     }
 
     public static void connection(String[] args) {
@@ -35,17 +33,17 @@ public class ClientHandler {
         try {
 
             System.out.println("\n ===== CONEXÃO CLIENTE/SERVIDOR ===== \n");
-            System.out.print("Conectando no servidor: " + args1[0]);
-            System.out.print("\nPorta: " + args1[1]);
+            System.out.print("Conectando no servidor: " + args[0]);
+            System.out.print("\nPorta: " + args[1]);
 
             if (args.length > 0) {
 
                 // Recebe o endereço do servidor e porta para tentar conexão
-                TTransport transport = new TSocket(args1[0], Integer.parseInt(args1[1]));
+                TTransport transport = new TSocket(args[0], Integer.parseInt(args[1]));
                 transport.open();
                 // Chama o protocolo de comunicação entre S/C
                 TProtocol protocol = new TBinaryProtocol(transport);
-                MetodosGrafo.Client client = new MetodosGrafo.Client(protocol);
+                Handler.Client client = new Handler.Client(protocol);
 
                 do {
 
