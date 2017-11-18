@@ -2,7 +2,7 @@ package Handlers;
 
 import Grafo.Aresta;
 import Grafo.KeyNotFound;
-import Grafo.GraphThrift;
+import Grafo.Thrift;
 import Grafo.Vertice;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ public class Client {
                 transport.open();
                 // Chama o protocolo de comunicação entre S/C
                 TProtocol protocol = new TBinaryProtocol(transport);
-                GraphThrift.Client client = new GraphThrift.Client(protocol);
+                Thrift.Client client = new Thrift.Client(protocol);
 
                 do {
 

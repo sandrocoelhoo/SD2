@@ -21,7 +21,7 @@ exception KeyNotFound {
 }
 
 struct Node{
-    1:i64 id,
+    1:i32 id,
     2:list<Finger> ft,
     3:Finger pred,
     4:string ip,
@@ -29,15 +29,23 @@ struct Node{
 }
 
 struct Finger{
-    1:i64 id,
+    1:i32 id,
     2:string ip,
     3:i32 port
 }
 
 
-
 service Chord {
-
+    void join(1:Node n),
+    Node getSucessor(1:i32 id),
+    Node getPredecessor(1:i32 id),
+    Node closestPrecedingFinger(1:i32 id),
+    void transferKeys(1:Node n),
+    void stabilize(),
+    void notify(1:Node n),
+    void fixFingers(),
+    Node sendSelf(),
+    void setPredecessor(1:Node n)
 }
 
 service Thrift extends Chord{
@@ -53,13 +61,5 @@ service Thrift extends Chord{
 	list<Aresta> readAllAresta() throws (1:KeyNotFound knf),
 	list<Aresta> readAllArestaOfVertice(1:Vertice v) throws (1:KeyNotFound knf),
 	bool updateAresta(1:Aresta a) throws (1:KeyNotFound knf),
-	bool deleteAresta(1:Aresta a) throws (1:KeyNotFound knf),
-
-	i32 getID() throws (1:KeyNotFound knf),
-	i32 getSuc() throws (1:KeyNotFound knf),
-	i32 getAnt() throws (1:KeyNotFound knf),
-bool conectar(1:string ip,2:string porta) throws (1:KeyNotFound knf),
-	bool isSuc(1:i32 VertKey) throws (1:KeyNotFound knf),
-	bool conectSuc(1:i32 VertSuc) trows (1:KeyNotFound knf)
-	
+	bool deleteAresta(1:Aresta a) throws (1:KeyNotFound knf),	
 }

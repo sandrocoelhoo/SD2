@@ -2,14 +2,15 @@ package Handlers;
 
 import Grafo.Aresta;
 import Grafo.KeyNotFound;
-import Grafo.GraphThrift;
+import Grafo.Node;
+import Grafo.Thrift;
 import Grafo.Vertice;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.thrift.TException;
 
-public class Handler implements GraphThrift.Iface {
+public class Handler implements Thrift.Iface {
 
     private ConcurrentHashMap<Integer, Vertice> HashVertice;
 
@@ -184,5 +185,55 @@ public class Handler implements GraphThrift.Iface {
 
             return true;
         }
+    }
+
+    @Override
+    public void join(Node n) throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Node getSucessor(int id) throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Node getPredecessor(int id) throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Node closestPrecedingFinger(int id) throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void transferKeys(Node n) throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void stabilize() throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void notify(Node n) throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void fixFingers() throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Node sendSelf() throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void setPredecessor(Node n) throws TException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
