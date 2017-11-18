@@ -2,18 +2,18 @@ package Handlers;
 
 import Grafo.Aresta;
 import Grafo.KeyNotFound;
-import Grafo.Handler;
+import Grafo.GraphThrift;
 import Grafo.Vertice;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.thrift.TException;
 
-public class ServerHandler implements Handler.Iface {
+public class Handler implements GraphThrift.Iface {
 
     private ConcurrentHashMap<Integer, Vertice> HashVertice;
 
-    public ServerHandler(String args[]) {
+    public Handler(String args[]) {
         
         
         

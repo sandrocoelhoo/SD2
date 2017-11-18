@@ -46,8 +46,8 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <!--<mainClass>Handlers.ServerHandler</mainClass>-->
-                            <mainClass>Handlers.ClientHandler</mainClass>
+                            <!--<mainClass>Handlers.Server</mainClass>-->
+                            <mainClass>Handlers.Client</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

@@ -13,20 +13,34 @@ struct Vertice {
 	2:i32 cor,
 	3:string descricao,
 	4:double peso,
-	5:map<i32,Aresta> HashAresta,
+	5:map<i32,Aresta> HashAresta
+
 }
 
 exception KeyNotFound {
 }
 
-struct HandlerThrift {
-	1:i32 suc,
-	2:i32 ant,
-	3:i32 id
+struct Node{
+    1:i64 id,
+    2:list<Finger> ft,
+    3:Finger pred,
+    4:string ip,
+    5:i32 port
+}
+
+struct Finger{
+    1:i64 id,
+    2:string ip,
+    3:i32 port
+}
+
+
+
+service Chord {
 
 }
 
-service HandlerThrift {
+service Thrift extends Chord{
 	bool addVertice(1:Vertice v) throws (1:KeyNotFound knf),
 	Vertice readVertice(1:i32 nome) throws (1:KeyNotFound knf),
 	bool updateVertice(1:Vertice v) throws (1:KeyNotFound knf),

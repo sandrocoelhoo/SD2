@@ -8,13 +8,13 @@ import org.apache.thrift.transport.TServerTransport;
 
 public class Server {
 
-    public static ServerHandler handler;
-    public static Grafo.Handler.Processor processor;
+    public static Handler handler;
+    public static Grafo.GraphThrift.Processor processor;
     
     public static void main(String [] args) {
         try {
-            handler = new ServerHandler(args);
-            processor = new Grafo.Handler.Processor(handler);
+            handler = new Handler(args);
+            processor = new Grafo.GraphThrift.Processor(handler);
 
             TServerTransport servertransport = new TServerSocket(Integer.parseInt(args[1]));
 
