@@ -1,6 +1,8 @@
 package Handlers;
 
 import Grafo.Aresta;
+import Grafo.Chord;
+import Grafo.Finger;
 import Grafo.KeyNotFound;
 import Grafo.Node;
 import Grafo.Thrift;
@@ -8,21 +10,58 @@ import Grafo.Vertice;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import org.apache.thrift.TException;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
 
 public class Handler implements Thrift.Iface {
 
     private ConcurrentHashMap<Integer, Vertice> HashVertice;
+    private int id;
+    Node node, root;
 
-    public Handler(String args[]) {
-        
-        
-        
+    public Handler(String args[]) throws TException {
         this.HashVertice = new ConcurrentHashMap<Integer, Vertice>();
+        int port = Integer.parseInt(args[1]); //Porta do nó que quer entrar
+        int rootPort = Integer.parseInt(args[3]); //Porta do nó raiz
+
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
+        
+        node = new Node();
+        node.setFt(new ArrayList<Finger>());
+        node.setIp(args[0]);
+        node.setPort(port);
+
+        if (args[2].equals(node.getIp()) && (port == rootPort)) {
+            int a = (int) (Math.random() * Math.pow(2, 5));
+            node.setId(a);
+            join(node);
+            System.out.println("Nó raiz estabelecido com sucesso - ID: " + a);
+        } else {
+            TTransport transport = new TSocket(args[2], Integer.parseInt(args[3]));
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Chord.Client client = new Chord.Client(protocol);
+            root = client.sendSelf();
+            transport.close();
+
+            //node.setId(getValidID(root)); pra que isso não entendi.
+            System.out.println("Nó estabelecido com sucesso - ID: " + root.getId());
+            join(root);
+        }
+
+        id = (int) (Math.random() * Math.pow(2, 5));
+
     }
 
     @Override
     public boolean addVertice(Vertice v) throws TException {
+        System.out.println("id: " + id);
+
         if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
             return true;
         }
@@ -92,7 +131,7 @@ public class Handler implements Thrift.Iface {
     @Override
     public List<Vertice> readVerticeNeighboors(Vertice v) throws TException {
         ArrayList<Vertice> Vertices = new ArrayList<>();
-        
+
         for (Integer key : v.HashAresta.keySet()) {
             Vertices.add(this.readVertice(v.HashAresta.get(key).v2));
         }
@@ -135,10 +174,10 @@ public class Handler implements Thrift.Iface {
         ArrayList<Aresta> Arestas = new ArrayList<>();
 
         for (Integer keyVertice : HashVertice.keySet()) {
-            synchronized(keyVertice){
+            synchronized (keyVertice) {
                 for (Integer keyAresta : HashVertice.get(keyVertice).HashAresta.keySet()) {
                     Arestas.add(HashVertice.get(keyVertice).HashAresta.get(keyAresta));
-                }                
+                }
             }
         }
         return Arestas;
@@ -194,12 +233,13 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public Node getSucessor(int id) throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Node node = getPredecessor(id);
+        return node;
     }
 
     @Override
     public Node getPredecessor(int id) throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        node N = 
     }
 
     @Override
@@ -235,5 +275,16 @@ public class Handler implements Thrift.Iface {
     @Override
     public void setPredecessor(Node n) throws TException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    public void verifyID(Node node) throws TException {
+
+        int a = (int) (Math.random() * Math.pow(2, 5));
+        node.setId(a);
+        
+        Node compare = getSucessor(a);
+        
+        if (node.getId() == getSucessor(node))
+
     }
 }
