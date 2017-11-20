@@ -22,45 +22,60 @@ public class Handler implements Thrift.Iface {
 
     private ConcurrentHashMap<Integer, Vertice> HashVertice;
     private int id;
-    private static Node node, root;
+    private static Node node, nodeRaiz;
     private static int numBits = 5;
 
     public Handler(String args[]) throws TException {
-        this.HashVertice = new ConcurrentHashMap<Integer, Vertice>();
-        int port = Integer.parseInt(args[1]); //Porta do nó que quer entrar
-        int rootPort = Integer.parseInt(args[3]); //Porta do nó raiz
+        /* Ex. da sequência de argumentos:
+            IP Local | Porta Local | IP Raíz | Porta Raíz
+            1ª Vez: localhost 4000 localhost 4000 (IP/Porta Iguais para upar o nó raíz)
+            2ª+ Vez: localhost 4001 localhost 4000 (Nó que quer entrar tem que ter porta diferente)
+         */
+        this.HashVertice = new ConcurrentHashMap<Integer, Vertice>(); // Instancia hash para funções de vértice e aresta
 
+        int port = Integer.parseInt(args[1]); //Porta do nó local (Que quer entrar no chord)
+        int nodeRaizPort = Integer.parseInt(args[3]); //Porta do nó nodeRaiz
+
+        // Variável de thread usada nas funções fixFingers e Stabilize pra permitir que os nós entrem a qualquer momento ao chord. [Artigo]
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(numBits);
 
         node = new Node();
         node.setFt(new ArrayList<Finger>());
-        node.setIp(args[0]);
-        node.setPort(port);
+        node.setIp(args[0]); // IP Local
+        node.setPort(port); // Porta Local
 
-        if (args[2].equals(node.getIp()) && (port == rootPort)) {
-            int a = (int) (Math.random() * Math.pow(2, numBits));
-            node.setId(a);
+        // Se o IP/Porta "Raiz" for igual ao IP e porta Local estabelece o nó raíz
+        if (args[2].equals(node.getIp()) && (port == nodeRaizPort)) {
+            randomID(node);
             join(node);
-            System.out.println("Nó raiz estabelecido com sucesso - ID: " + a);
+            System.out.println("# Nó RAIZ estabelecido: \n"
+                    + "*ID: " + node.getId()
+                    + "\n*IP: " + node.getIp()
+                    + "\n*Port: " + node.getPort() + "\n");
         } else {
+            /* Quer dizer que já existe um nó no chord então irá iniciar uma comunicação com
+            o nó raíz e vai atribuir esse nó raíz à variável nodeRaiz. Então o nó local, 
+            ao setar seu ID primeiro deve verificar que não existe nenhum nó pertencente ao 
+            chord com o mesmo ID, por meio da função VerifyID.
+             */
             TTransport transport = new TSocket(args[2], Integer.parseInt(args[3]));
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             Chord.Client client = new Chord.Client(protocol);
-            root = client.sendSelf();
+            nodeRaiz = client.sendSelf();
             transport.close();
-            node.setId(verifyID(root));
-            System.out.println("Nó estabelecido com sucesso - ID: " + root.getId());
-            join(root);
+            node.setId(verifyID(nodeRaiz));
+            join(nodeRaiz);
+            System.out.println("# Nó local estabelecido no Chord: \n"
+                    + "*ID: " + node.getId()
+                    + "\n*IP: " + node.getIp()
+                    + "\n*Port: " + node.getPort() + "\n");
         }
-
-        id = (int) (Math.random() * Math.pow(2, numBits));
-
     }
 
     @Override
     public boolean addVertice(Vertice v) throws TException {
-        
+
         if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
             return true;
         }
@@ -294,23 +309,23 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public Node closestPrecedingFinger(int id) throws TException {
-        
-        for(int i = numBits - 1; i >= 0; i--){
-            System.out.println("Procurando Finger Predecessor mais próximo para ID: "+id+" na tabela de ID:"+node.getId()+" Entrada("+i+")->"+node.getFt().get(i).getId());
-            if(interval(node.getFt().get(i).getId(),node.getId(),true,id,true)){
-                if(node.getId() != node.getFt().get(i).getId()){
+
+        for (int i = numBits - 1; i >= 0; i--) {
+            System.out.println("Procurando Finger Predecessor mais próximo para ID: " + id + " na tabela de ID:" + node.getId() + " Entrada(" + i + ")->" + node.getFt().get(i).getId());
+            if (interval(node.getFt().get(i).getId(), node.getId(), true, id, true)) {
+                if (node.getId() != node.getFt().get(i).getId()) {
                     Finger finger = node.getFt().get(i);
-                    TTransport transport = new TSocket(finger.getIp(),finger.getPort());
+                    TTransport transport = new TSocket(finger.getIp(), finger.getPort());
                     transport.open();
                     TProtocol protocol = new TBinaryProtocol(transport);
                     Chord.Client client = new Chord.Client(protocol);
                     Node aux = client.sendSelf();
                     transport.close();
                     return aux;
-                }else{
+                } else {
                     return node;
                 }
-            } 
+            }
         }
         return node;
     }
@@ -348,21 +363,32 @@ public class Handler implements Thrift.Iface {
     public int verifyID(Node node) throws TException {
         int trueID = -1;
 
+        System.out.println("\nGerando ID... \n");
+        
         while (1 == 1) {
             trueID = randomID(node).getId();
-
+            // Abre a conexão com os dados locais do nó e verifica no sucessor se o ID pode ser usado.
             TTransport transport = new TSocket(node.getIp(), node.getPort());
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             Chord.Client client = new Chord.Client(protocol);
-            Node aux = client.getSucessor(trueID);
-            int idAux = aux.getId();
-
+            
+            Node aux = client.getSucessor(trueID); // Pergunta qual é o ID do sucessor
+            
+            int idAux = aux.getId(); // Variável de verificação de ID
+            
+            /* Se retornar um ID do sucessor diferente do perguntado 
+            ao chord quer dizer que esse ID perguntado pode ser atribuído. 
+            Senão continua o loop até encontrar um ID factível. 
+            Ex.: Gerou o ID 5 e ao perguntar o sucessor, retornou o 9, 
+            logo o 5 pode ser atribuído ao nó local. Caso retornasse o ID 5, 
+            teria que gerar outro ID sem ser o 5.*/
+            
             if (idAux != trueID) {
-                System.out.println("ID: " + trueID + " atribuído ao nó.");
+                System.out.println("ID gerado!");
                 break;
             } else {
-                System.out.println("Não foi possível atribuir esse ID ao nó. Gerando outro ID...");
+                System.out.println("ID já atribuído.");
             }
         }
 
@@ -371,7 +397,7 @@ public class Handler implements Thrift.Iface {
     }
 
     public Node randomID(Node node) {
-
+        // Função destinada a geração de um número aleatório dentro do intervalo pre-definido
         int a = (int) (Math.random() * Math.pow(2, numBits));
         node.setId(a);
 
@@ -381,7 +407,7 @@ public class Handler implements Thrift.Iface {
     public static boolean interval(int x, int a, boolean flagOpenA, int b, boolean flagOpenB) {
         //Verifica se x está no intervalo de valores "a" e "b".
         //As flags informam se o intervalo é aberto ou não. 
-        
+
         if (a == b) {
             return !((flagOpenA && flagOpenB) && x == a);
         } else {
@@ -397,8 +423,8 @@ public class Handler implements Thrift.Iface {
         }
 
     }
-    
-    public static int getID(){
+
+    public static int getID() {
         return node.getId();
     }
 }

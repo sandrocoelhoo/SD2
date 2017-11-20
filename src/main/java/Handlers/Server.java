@@ -20,7 +20,6 @@ public class Server {
 
             TServer server = new TThreadPoolServer(new TThreadPoolServer.Args(servertransport).processor(processor));
 
-            System.out.println("Server started and running at port " + args[1] + "...");
             server.serve();
 
         } catch (TException x) {
