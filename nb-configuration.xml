@@ -8,8 +8,11 @@ Without this configuration present, some functionality in the IDE may be limited
 -->
     <config-data xmlns="http://www.netbeans.org/ns/maven-config-data/1">
         <configurations>
-            <configuration id="Server" profiles=""/>
             <configuration id="Client" profiles=""/>
+            <configuration id="Client 4001" profiles=""/>
+            <configuration id="Server" profiles=""/>
+            <configuration id="Server 4001" profiles=""/>
+            <configuration id="Server 4002" profiles=""/>
         </configurations>
     </config-data>
 </project-shared-configuration>

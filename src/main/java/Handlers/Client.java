@@ -46,7 +46,6 @@ public class Client {
                 Thrift.Client client = new Thrift.Client(protocol);
 
                 do {
-
                     System.out.println("\n =====> MENU PRINCIPAL: GRAFO <===== \n");
                     System.out.println("1  - Adicionar vertice");
                     System.out.println("2  - Atualizar vertice");

@@ -22,22 +22,23 @@ public class Handler implements Thrift.Iface {
 
     private ConcurrentHashMap<Integer, Vertice> HashVertice;
     private int id;
-    Node node, root;
+    private static Node node, root;
+    private static int numBits = 5;
 
     public Handler(String args[]) throws TException {
         this.HashVertice = new ConcurrentHashMap<Integer, Vertice>();
         int port = Integer.parseInt(args[1]); //Porta do nó que quer entrar
         int rootPort = Integer.parseInt(args[3]); //Porta do nó raiz
 
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
-        
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(numBits);
+
         node = new Node();
         node.setFt(new ArrayList<Finger>());
         node.setIp(args[0]);
         node.setPort(port);
 
         if (args[2].equals(node.getIp()) && (port == rootPort)) {
-            int a = (int) (Math.random() * Math.pow(2, 5));
+            int a = (int) (Math.random() * Math.pow(2, numBits));
             node.setId(a);
             join(node);
             System.out.println("Nó raiz estabelecido com sucesso - ID: " + a);
@@ -48,20 +49,18 @@ public class Handler implements Thrift.Iface {
             Chord.Client client = new Chord.Client(protocol);
             root = client.sendSelf();
             transport.close();
-
-            //node.setId(getValidID(root)); pra que isso não entendi.
+            node.setId(verifyID(root));
             System.out.println("Nó estabelecido com sucesso - ID: " + root.getId());
             join(root);
         }
 
-        id = (int) (Math.random() * Math.pow(2, 5));
+        id = (int) (Math.random() * Math.pow(2, numBits));
 
     }
 
     @Override
     public boolean addVertice(Vertice v) throws TException {
-        System.out.println("id: " + id);
-
+        
         if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
             return true;
         }
@@ -228,23 +227,92 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public void join(Node n) throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        node.setPred(null);
+
+        for (int i = 1; i <= numBits; i++) {
+            Finger aux = new Finger();
+            aux.setId(node.getId());
+            aux.setIp(node.getIp());
+            aux.setPort(node.getPort());
+            node.getFt().add(aux);
+        }
+
+        if (node.getId() != n.getId()) {
+            TTransport transport = new TSocket(n.getIp(), n.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Chord.Client client = new Chord.Client(protocol);
+            Node naux = client.getSucessor(node.getId());
+            transport.close();
+
+            synchronized (node.getFt().get(0)) {
+                node.getFt().get(0).setId(naux.getId());
+                node.getFt().get(0).setIp(naux.getIp());
+                node.getFt().get(0).setPort(naux.getPort());
+            }
+        }
     }
 
     @Override
     public Node getSucessor(int id) throws TException {
         Node node = getPredecessor(id);
-        return node;
+
+        if (node.getFt().get(0).getId() == node.getId()) {
+            System.out.println("Sucessor ID: " + node.getId() + " encontrado para ID:" + id);
+            return node;
+        } else {
+            TTransport transport = new TSocket(node.getFt().get(0).getIp(), node.getFt().get(0).getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Chord.Client client = new Chord.Client(protocol);
+            node = client.sendSelf();
+            transport.close();
+            System.out.println("Else = Sucessor ID: " + node.getId() + " encontrado para ID:" + id);
+            return node;
+        }
     }
 
     @Override
     public Node getPredecessor(int id) throws TException {
-        node N = 
+        System.out.println("Procurando Predecessor para ID: " + id);
+        Node aux = node;
+        while (!interval(id, aux.getId(), true, aux.getFt().get(0).getId(), false)) {
+            if (aux != node) {
+                TTransport transport = new TSocket(aux.getIp(), aux.getPort());
+                transport.open();
+                TProtocol protocol = new TBinaryProtocol(transport);
+                Chord.Client client = new Chord.Client(protocol);
+                aux = client.closestPrecedingFinger(id);
+                transport.close();
+            } else {
+                aux = closestPrecedingFinger(id);
+            }
+        }
+        System.out.println("Predecessor ID: " + node.getId() + " achado para ID: " + id);
+        return aux;
     }
 
     @Override
     public Node closestPrecedingFinger(int id) throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        
+        for(int i = numBits - 1; i >= 0; i--){
+            System.out.println("Procurando Finger Predecessor mais próximo para ID: "+id+" na tabela de ID:"+node.getId()+" Entrada("+i+")->"+node.getFt().get(i).getId());
+            if(interval(node.getFt().get(i).getId(),node.getId(),true,id,true)){
+                if(node.getId() != node.getFt().get(i).getId()){
+                    Finger finger = node.getFt().get(i);
+                    TTransport transport = new TSocket(finger.getIp(),finger.getPort());
+                    transport.open();
+                    TProtocol protocol = new TBinaryProtocol(transport);
+                    Chord.Client client = new Chord.Client(protocol);
+                    Node aux = client.sendSelf();
+                    transport.close();
+                    return aux;
+                }else{
+                    return node;
+                }
+            } 
+        }
+        return node;
     }
 
     @Override
@@ -269,7 +337,7 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public Node sendSelf() throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return node;
     }
 
     @Override
@@ -277,14 +345,60 @@ public class Handler implements Thrift.Iface {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    public void verifyID(Node node) throws TException {
+    public int verifyID(Node node) throws TException {
+        int trueID = -1;
 
-        int a = (int) (Math.random() * Math.pow(2, 5));
+        while (1 == 1) {
+            trueID = randomID(node).getId();
+
+            TTransport transport = new TSocket(node.getIp(), node.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Chord.Client client = new Chord.Client(protocol);
+            Node aux = client.getSucessor(trueID);
+            int idAux = aux.getId();
+
+            if (idAux != trueID) {
+                System.out.println("ID: " + trueID + " atribuído ao nó.");
+                break;
+            } else {
+                System.out.println("Não foi possível atribuir esse ID ao nó. Gerando outro ID...");
+            }
+        }
+
+        return trueID;
+
+    }
+
+    public Node randomID(Node node) {
+
+        int a = (int) (Math.random() * Math.pow(2, numBits));
         node.setId(a);
-        
-        Node compare = getSucessor(a);
-        
-        if (node.getId() == getSucessor(node))
 
+        return node;
+    }
+
+    public static boolean interval(int x, int a, boolean flagOpenA, int b, boolean flagOpenB) {
+        //Verifica se x está no intervalo de valores "a" e "b".
+        //As flags informam se o intervalo é aberto ou não. 
+        
+        if (a == b) {
+            return !((flagOpenA && flagOpenB) && x == a);
+        } else {
+            if ((!flagOpenA && x == a) || (!flagOpenB && x == b)) {
+                return true;
+            }
+
+            if (a < b) {
+                return ((x > a) && (x < b));
+            } else {
+                return ((x > a) || (x >= 0 && x < b));
+            }
+        }
+
+    }
+    
+    public static int getID(){
+        return node.getId();
     }
 }

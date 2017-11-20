@@ -11,7 +11,7 @@ public class Server {
     public static Handler handler;
     public static Grafo.Thrift.Processor processor;
     
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         try {
             handler = new Handler(args);
             processor = new Grafo.Thrift.Processor(handler);
