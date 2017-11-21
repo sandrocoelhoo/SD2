@@ -309,7 +309,7 @@ public class Handler implements Thrift.Iface {
         Node node = getPredecessor(id);
 
         if (node.getFt().get(0).getId() == node.getId()) {
-            System.out.println("Sucessor ID: " + node.getId() + " encontrado para ID:" + id);
+            System.out.println("# Sucessor " + node.getId() + ", encontrado para ID:" + id);
             return node;
         } else {
             TTransport transport = new TSocket(node.getFt().get(0).getIp(), node.getFt().get(0).getPort());
@@ -325,7 +325,7 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public Node getPredecessor(int id) throws TException {
-        System.out.println("\n-> Procurando Predecessor para ID: " + id);
+        System.out.println("\n-> Procurando predecessor para ID: " + id);
 
         // Aux recebe o nó local
         Node aux = node;
@@ -347,7 +347,7 @@ public class Handler implements Thrift.Iface {
                 aux = closestPrecedingFinger(id);
             }
         }
-        System.out.println("\n-> Predecessor ID:" + node.getId() + ", encontrado para ID:" + id);
+        System.out.println("-> Predecessor " + node.getId() + ", encontrado para ID:" + id);
         return aux;
     }
 
@@ -434,7 +434,7 @@ public class Handler implements Thrift.Iface {
             client.notify(node);
             transport.close();
         }
-        System.out.println("\n-> Estabilização do chord concluída.");
+        System.out.println("-> Estabilização do chord concluída.");
         printTable();
     }
 
@@ -562,8 +562,12 @@ public class Handler implements Thrift.Iface {
 
     private void printTable() {
         for (int i = 0; i < numBits; i++) {
+            
             Finger aux = node.getFt().get(i);
-            System.out.println("Finger (" + i + ") |" + (node.getId() + (long) Math.pow(2, i)) % (long) Math.pow(2, numBits) + "| -> " + aux.getId() + "/" + aux.getIp() + ":" + aux.getPort());
+            
+            System.out.println("("+i+") |" + (node.getId() 
+                    + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits) 
+                    + " | --> " + aux.getId() + "-" + aux.getIp() + ":" + aux.getPort());
         }
     }
 
