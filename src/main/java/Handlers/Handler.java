@@ -384,16 +384,22 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public void stabilize() throws TException {
-
+        
+        /* Método serve para pegar o nó local n, perguntar qual é o sucessor dele,
+        suponhamos que seja ns e a partir desse sucessor setar no próprio sucessor
+        o predecessor como sendo n e no nó local n setar o sucessor como sendo ns
+        Como a thread será executada novamente np que era o predecessor e sucessor de ns
+        passa a perguntar para ns qual é o predecessor dele, que no caso é n
+        e então atualiza a sua ft para sucessor n e no local n atualiza o predeessor
+        de null para np*/
+        
         Finger fingerAux; 
         Node nodeAux = null;
         TTransport transport = null;
         TProtocol protocol = null;
-        Chord.Client client = null; // Instancia um client
+        Chord.Client client = null; 
         fingerAux = node.getFt().get(0); // Pega o primeiro campo da FT do nó local [sucessor]
         
-        // Se o sucessor do nó local for diferente do id dele mesmo então abre uma conexão 
-        // com os valores do sucessor. 
         if (fingerAux.getId() != node.getId()) {
             transport = new TSocket(fingerAux.getIp(), fingerAux.getPort());
             transport.open();
@@ -405,18 +411,20 @@ public class Handler implements Thrift.Iface {
             nodeAux = node; // Acontece caso o sucessor do nó for o próprio nó.
         }
 
-        fingerAux = nodeAux.getPred(); 
-
+        fingerAux = nodeAux.getPred(); // Recebe o finger do predecessor [IP/port/id] 
+        
+        
         if (fingerAux != null && interval(fingerAux.getId(), node.getId(), true, node.getFt().get(0).getId(), true)) {
             Finger aux = new Finger();
             aux.setId(fingerAux.getId());
             aux.setIp(fingerAux.getIp());
             aux.setPort(fingerAux.getPort());
             printTable();
-            //System.out.println("Sucessor de ID:"+n.getId()+" foi alterado de "+n.getFinger_table().get(0).getId()+" para "+aux.getId());
+            // Altera o sucessor na FT. 
             node.getFt().set(0, aux);
-            printTable();
+            printTable(); // Imprime a FT do nó
         }
+        
         
         if (node.getFt().get(0).getId() != node.getId()) {
             transport = new TSocket(node.getFt().get(0).getIp(), node.getFt().get(0).getPort());
@@ -426,32 +434,38 @@ public class Handler implements Thrift.Iface {
             client.notify(node);
             transport.close();
         }
-        System.out.println("ID:" + node.getId() + " Stabilization Protocol Executed!");
+        System.out.println("\n-> Estabilização do chord concluída.");
         printTable();
     }
 
     @Override
     public void notify(Node n) throws TException {
-        System.out.println(node.getId() + " foi notificado de " + n.getId());
+        /* Esse método notifica o nó sucessor que a partir daquele momento ele será 
+        o predecessor do nó sucessor.
+        */
+        
         if (node.getPred() == null || interval(n.getId(), node.getPred().getId(), true, node.getId(), true)) {
             Finger aux = new Finger();
             aux.setId(n.getId());
             aux.setIp(n.getIp());
             aux.setPort(n.getPort());
             n.setPred(aux);
-            System.out.println(n.getId() + " decidiu que " + n.getId() + " é seu predecessor");
+            System.out.println("\n-> O predecessor de:"+ node.getId() +" agora é: " + n.getId());
         } else {
-            System.out.println("Não Houveram alterações de predecessor em ID:" + node.getId());
+            System.out.println("\n-> Não houveram alterações de predecessor");
         }
     }
 
     @Override
     public void fixFingers() throws TException {
-        System.out.println("Correção de Entrada de FingerTableIniciada");
-        System.out.println("Tabela Atual");
+        // Atualiza a finger table do nó local exceto o sucessor
+        
+        System.out.println("\n-> Corrigindo a Finger Table dos nós...");
+        
+        System.out.println("\n ######## Tabela Atual #######");
         printTable();
+        
         for (int i = 1; i < numBits; i++) {
-            System.out.println("Corrigindo entrada:" + i);
             Node aux = getSucessor((node.getId() + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits));
             Finger f = new Finger();
             f.setId(aux.getId());
@@ -459,8 +473,9 @@ public class Handler implements Thrift.Iface {
             f.setPort(aux.getPort());
             node.getFt().set(i, f);
         }
+        
+        System.out.println("\n ######## Tabela Após correção #######");
         printTable();
-        System.out.println("Correção de Entrada de FingerTable Concluída");
     }
 
     @Override
