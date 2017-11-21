@@ -293,7 +293,8 @@ public class Handler implements Thrift.Iface {
             Chord.Client client = new Chord.Client(protocol);
             Node nodeAux = client.getSucessor(node.getId());
             transport.close();
-
+            
+        // Atualiza o primeiro valor da tabela FT do nó local com os dados do nó sucessor 
             synchronized (node.getFt().get(0)) {
                 node.getFt().get(0).setId(nodeAux.getId());
                 node.getFt().get(0).setIp(nodeAux.getIp());
@@ -324,13 +325,15 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public Node getPredecessor(int id) throws TException {
-        System.out.println("Procurando Predecessor para ID: " + id);
+        System.out.println("\n-> Procurando Predecessor para ID: " + id);
 
         // Aux recebe o nó local
         Node aux = node;
 
         /* Entra em loop com a função de verificação de intervalo. 
-        
+        Caso encontre um predecessor é passado para a função closest encontrar o 
+        predecessor mais próximo, pois há casos em em que mesmo encontrando o predecessor
+        não é o predecessor que deve ser usado.
          */
         while (!interval(id, aux.getId(), true, aux.getFt().get(0).getId(), false)) {
             if (aux != node) {
@@ -344,7 +347,7 @@ public class Handler implements Thrift.Iface {
                 aux = closestPrecedingFinger(id);
             }
         }
-        System.out.println("Predecessor ID: " + node.getId() + " achado para ID: " + id);
+        System.out.println("\n-> Predecessor ID:" + node.getId() + ", encontrado para ID:" + id);
         return aux;
     }
 
@@ -352,7 +355,10 @@ public class Handler implements Thrift.Iface {
     public Node closestPrecedingFinger(int id) throws TException {
 
         for (int i = numBits - 1; i >= 0; i--) {
-            System.out.println("Procurando Finger Predecessor mais próximo para ID: " + id + " na tabela de ID:" + node.getId() + " Entrada(" + i + ")->" + node.getFt().get(i).getId());
+            System.out.println("Procurando Finger Predecessor mais próximo para ID: " 
+                    + id + " na tabela de ID:" + node.getId() + " Entrada("+ i +")->" 
+                    + node.getFt().get(i).getId());
+            
             if (interval(node.getFt().get(i).getId(), node.getId(), true, id, true)) {
                 if (node.getId() != node.getFt().get(i).getId()) {
                     Finger finger = node.getFt().get(i);
@@ -378,27 +384,28 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public void stabilize() throws TException {
-        //System.out.println("Starting Stabilization Protocol");
-        //GET SUCESSOR PREDECESSOR
 
-        Finger fingerAux;
+        Finger fingerAux; 
         Node nodeAux = null;
         TTransport transport = null;
         TProtocol protocol = null;
-        Chord.Client client = null;
-        fingerAux = node.getFt().get(0);
+        Chord.Client client = null; // Instancia um client
+        fingerAux = node.getFt().get(0); // Pega o primeiro campo da FT do nó local [sucessor]
+        
+        // Se o sucessor do nó local for diferente do id dele mesmo então abre uma conexão 
+        // com os valores do sucessor. 
         if (fingerAux.getId() != node.getId()) {
             transport = new TSocket(fingerAux.getIp(), fingerAux.getPort());
             transport.open();
             protocol = new TBinaryProtocol(transport);
             client = new Chord.Client(protocol);
-            nodeAux = client.sendSelf();
+            nodeAux = client.sendSelf(); // Envia os dados do sucessor para o nó auxiliar
             transport.close();
         } else {
-            nodeAux = node;
+            nodeAux = node; // Acontece caso o sucessor do nó for o próprio nó.
         }
 
-        fingerAux = nodeAux.getPred();
+        fingerAux = nodeAux.getPred(); 
 
         if (fingerAux != null && interval(fingerAux.getId(), node.getId(), true, node.getFt().get(0).getId(), true)) {
             Finger aux = new Finger();
@@ -410,6 +417,7 @@ public class Handler implements Thrift.Iface {
             node.getFt().set(0, aux);
             printTable();
         }
+        
         if (node.getFt().get(0).getId() != node.getId()) {
             transport = new TSocket(node.getFt().get(0).getIp(), node.getFt().get(0).getPort());
             transport.open();
