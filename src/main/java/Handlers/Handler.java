@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -22,6 +23,8 @@ import org.apache.thrift.transport.TTransport;
 
 public class Handler implements Thrift.Iface {
 
+    
+    private static final ConcurrentHashMap<Integer, Semaphore> semaphore = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Integer, Vertice> HashVertice;
     private int id;
     private static Node node, nodeRaiz;
@@ -76,7 +79,7 @@ public class Handler implements Thrift.Iface {
         É primeiramente criado um serviço que irá executar as threads com numBits = 5 Threads. 
         O scheduleWithFixedDelay permite que as threads sejam reexecutadas após o tempo demarcado,
         porém, existe também um tempo de delay até que a próxima thread inicie após o fim da primeira. 
-        */
+         */
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(numBits);
 
         ScheduledFuture scheduledFutureStabilize = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -87,7 +90,7 @@ public class Handler implements Thrift.Iface {
                 System.out.println("\n-> Erro ao iniciar Thread de estabilização do Chord.");
                 ex.printStackTrace();
             }
-        }, 10, 5, TimeUnit.SECONDS);
+        }, 10, 15, TimeUnit.SECONDS);
 
         ScheduledFuture scheduledFutureFixFingers = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -97,14 +100,33 @@ public class Handler implements Thrift.Iface {
                 System.out.println("\n-> Erro ao iniciar Thread para atualizar as Finger Tables");
                 ex.printStackTrace();
             }
-        }, 10, 5, TimeUnit.SECONDS);
+        }, 10, 15, TimeUnit.SECONDS);
     }
 
     @Override
     public boolean addVertice(Vertice v) throws TException {
+        // Nó que define onde será colocado o vértice a partir do resto da operação
+        Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
 
-        if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
+        
+        // Se o nó ID do nó local for o mesmo ID do vértice auxiliar então já insere, senão 
+        // abre uma nova conexão com o nó onde deve ser inserido o vértice e envia pra os dados pra ele. 
+        if (node.getId() == aux.getId()) {
+            if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
+                return true;
+            }
+            System.out.println("\n########semaforo");
+            semaphore.putIfAbsent(v.getNome(), new Semaphore(1));
             return true;
+
+        }else{
+            System.out.println("\n--> Direcionando para outro servidor...");
+            TTransport transport = new TSocket(aux.getIp(),aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
+            client.addVertice(v);
+            transport.close();
         }
 
         return false;
@@ -293,8 +315,8 @@ public class Handler implements Thrift.Iface {
             Chord.Client client = new Chord.Client(protocol);
             Node nodeAux = client.getSucessor(node.getId());
             transport.close();
-            
-        // Atualiza o primeiro valor da tabela FT do nó local com os dados do nó sucessor 
+
+            // Atualiza o primeiro valor da tabela FT do nó local com os dados do nó sucessor 
             synchronized (node.getFt().get(0)) {
                 node.getFt().get(0).setId(nodeAux.getId());
                 node.getFt().get(0).setIp(nodeAux.getIp());
@@ -355,10 +377,10 @@ public class Handler implements Thrift.Iface {
     public Node closestPrecedingFinger(int id) throws TException {
 
         for (int i = numBits - 1; i >= 0; i--) {
-            System.out.println("Procurando Finger Predecessor mais próximo para ID: " 
-                    + id + " na tabela de ID:" + node.getId() + " Entrada("+ i +")->" 
+            System.out.println("Procurando Finger Predecessor mais próximo para ID: "
+                    + id + " na tabela de ID:" + node.getId() + " Entrada(" + i + ")->"
                     + node.getFt().get(i).getId());
-            
+
             if (interval(node.getFt().get(i).getId(), node.getId(), true, id, true)) {
                 if (node.getId() != node.getFt().get(i).getId()) {
                     Finger finger = node.getFt().get(i);
@@ -384,7 +406,7 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public void stabilize() throws TException {
-        
+
         /* Método serve para pegar o nó local n, perguntar qual é o sucessor dele,
         suponhamos que seja ns e a partir desse sucessor setar no próprio sucessor
         o predecessor como sendo n e no nó local n setar o sucessor como sendo ns
@@ -392,14 +414,13 @@ public class Handler implements Thrift.Iface {
         passa a perguntar para ns qual é o predecessor dele, que no caso é n
         e então atualiza a sua ft para sucessor n e no local n atualiza o predeessor
         de null para np*/
-        
-        Finger fingerAux; 
+        Finger fingerAux;
         Node nodeAux = null;
         TTransport transport = null;
         TProtocol protocol = null;
-        Chord.Client client = null; 
+        Chord.Client client = null;
         fingerAux = node.getFt().get(0); // Pega o primeiro campo da FT do nó local [sucessor]
-        
+
         if (fingerAux.getId() != node.getId()) {
             transport = new TSocket(fingerAux.getIp(), fingerAux.getPort());
             transport.open();
@@ -412,8 +433,7 @@ public class Handler implements Thrift.Iface {
         }
 
         fingerAux = nodeAux.getPred(); // Recebe o finger do predecessor [IP/port/id] 
-        
-        
+
         if (fingerAux != null && interval(fingerAux.getId(), node.getId(), true, node.getFt().get(0).getId(), true)) {
             Finger aux = new Finger();
             aux.setId(fingerAux.getId());
@@ -424,8 +444,7 @@ public class Handler implements Thrift.Iface {
             node.getFt().set(0, aux);
             printTable(); // Imprime a FT do nó
         }
-        
-        
+
         if (node.getFt().get(0).getId() != node.getId()) {
             transport = new TSocket(node.getFt().get(0).getIp(), node.getFt().get(0).getPort());
             transport.open();
@@ -442,15 +461,15 @@ public class Handler implements Thrift.Iface {
     public void notify(Node n) throws TException {
         /* Esse método notifica o nó sucessor que a partir daquele momento ele será 
         o predecessor do nó sucessor.
-        */
-        
+         */
+
         if (node.getPred() == null || interval(n.getId(), node.getPred().getId(), true, node.getId(), true)) {
             Finger aux = new Finger();
             aux.setId(n.getId());
             aux.setIp(n.getIp());
             aux.setPort(n.getPort());
             n.setPred(aux);
-            System.out.println("\n-> O predecessor de:"+ node.getId() +" agora é: " + n.getId());
+            System.out.println("\n-> O predecessor de:" + node.getId() + " agora é: " + n.getId());
         } else {
             System.out.println("\n-> Não houveram alterações de predecessor");
         }
@@ -459,12 +478,12 @@ public class Handler implements Thrift.Iface {
     @Override
     public void fixFingers() throws TException {
         // Atualiza a finger table do nó local exceto o sucessor
-        
+
         System.out.println("\n-> Corrigindo a Finger Table dos nós...");
-        
+
         System.out.println("\n ######## Tabela Atual #######");
         printTable();
-        
+
         for (int i = 1; i < numBits; i++) {
             Node aux = getSucessor((node.getId() + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits));
             Finger f = new Finger();
@@ -473,7 +492,7 @@ public class Handler implements Thrift.Iface {
             f.setPort(aux.getPort());
             node.getFt().set(i, f);
         }
-        
+
         System.out.println("\n ######## Tabela Após correção #######");
         printTable();
     }
@@ -562,12 +581,12 @@ public class Handler implements Thrift.Iface {
 
     private void printTable() {
         for (int i = 0; i < numBits; i++) {
-            
+
             Finger aux = node.getFt().get(i);
-            
-            System.out.println("("+i+") |" + (node.getId() 
-                    + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits) 
-                    + " | --> " + aux.getId() + "-" + aux.getIp() + ":" + aux.getPort());
+
+            System.out.println("(" + i + ") |" + (node.getId()
+                    + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits)
+                    + "| -------> ID:" + aux.getId() + " IP:" + aux.getIp() + " PORT:" + aux.getPort());
         }
     }
 
