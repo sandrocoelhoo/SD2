@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -71,6 +73,23 @@ public class Handler implements Thrift.Iface {
                     + "\n*IP: " + node.getIp()
                     + "\n*Port: " + node.getPort() + "\n");
         }
+        
+        ScheduledFuture scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+            try {
+                stabilize();
+            } catch (TException ex) {
+                System.out.println("Erro ao iniciar Thread de protocolo de estabilização");
+                ex.printStackTrace();
+            }
+        }, 10, 10, TimeUnit.SECONDS);
+        ScheduledFuture scheduledFuture2 = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+            try {
+                fixFingers();
+            } catch (TException ex) {
+                System.out.println("Erro ao iniciar Thread de atualizar entradas da FingerTable");
+                ex.printStackTrace();
+            }
+        }, 10, 10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -253,12 +272,12 @@ public class Handler implements Thrift.Iface {
             aux.setPort(node.getPort());
             node.getFt().add(aux);
         }
-        
+
         /* Se o nó for o nó raiz, não faz nada. 
             Caso seja outro nó que deseja entrar no chord, então ele pede para o nó raiz
         qual é os dados que ele possui de sucessor e predecessor e então atualiza seus 
         campos da ft.
-        */
+         */
         if (node.getId() != raiz.getId()) {
             TTransport transport = new TSocket(raiz.getIp(), raiz.getPort());
             transport.open();
@@ -298,13 +317,13 @@ public class Handler implements Thrift.Iface {
     @Override
     public Node getPredecessor(int id) throws TException {
         System.out.println("Procurando Predecessor para ID: " + id);
-        
+
         // Aux recebe o nó local
         Node aux = node;
-        
+
         /* Entra em loop com a função de verificação de intervalo. 
         
-        */
+         */
         while (!interval(id, aux.getId(), true, aux.getFt().get(0).getId(), false)) {
             if (aux != node) {
                 TTransport transport = new TSocket(aux.getIp(), aux.getPort());
@@ -353,56 +372,79 @@ public class Handler implements Thrift.Iface {
     public void stabilize() throws TException {
         //System.out.println("Starting Stabilization Protocol");
         //GET SUCESSOR PREDECESSOR
-        
+
         Finger fingerAux;
         Node nodeAux = null;
         TTransport transport = null;
         TProtocol protocol = null;
         Chord.Client client = null;
         fingerAux = node.getFt().get(0);
-        if(fingerAux.getId() != node.getId()){
-            transport = new TSocket(fingerAux.getIp(),fingerAux.getPort());
+        if (fingerAux.getId() != node.getId()) {
+            transport = new TSocket(fingerAux.getIp(), fingerAux.getPort());
             transport.open();
             protocol = new TBinaryProtocol(transport);
             client = new Chord.Client(protocol);
             nodeAux = client.sendSelf();
             transport.close();
-        }else{
+        } else {
             nodeAux = node;
         }
-        
+
         fingerAux = nodeAux.getPred();
-        
-        if(fingerAux != null && interval(fingerAux.getId(),node.getId(),true,node.getFt().get(0).getId(),true)){
+
+        if (fingerAux != null && interval(fingerAux.getId(), node.getId(), true, node.getFt().get(0).getId(), true)) {
             Finger aux = new Finger();
             aux.setId(fingerAux.getId());
             aux.setIp(fingerAux.getIp());
             aux.setPort(fingerAux.getPort());
             printTable();
             //System.out.println("Sucessor de ID:"+n.getId()+" foi alterado de "+n.getFinger_table().get(0).getId()+" para "+aux.getId());
-            n.getFinger_table().set(0, aux);
+            node.getFt().set(0, aux);
             printTable();
         }
-        if(n.getFinger_table().get(0).getId() != n.getId()){
-            transport = new TSocket(n.getFinger_table().get(0).getIp(),n.getFinger_table().get(0).getPort());
+        if (node.getFt().get(0).getId() != node.getId()) {
+            transport = new TSocket(node.getFt().get(0).getIp(), node.getFt().get(0).getPort());
             transport.open();
             protocol = new TBinaryProtocol(transport);
-            cli = new Chord.Client(protocol);
-            cli.notify(n);
+            client = new Chord.Client(protocol);
+            client.notify(node);
             transport.close();
         }
-        System.out.println("ID:"+n.getId()+" Stabilization Protocol Executed!");
+        System.out.println("ID:" + node.getId() + " Stabilization Protocol Executed!");
         printTable();
     }
 
     @Override
     public void notify(Node n) throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        System.out.println(node.getId()+" foi notificado de " + n.getId());
+        if(node.getPred() == null || interval(n.getId(), node.getPred().getId(),true,node.getId(),true)){
+            Finger aux = new Finger();
+            aux.setId(n.getId());
+            aux.setIp(n.getIp());
+            aux.setPort(n.getPort());
+            n.setPred(aux);
+            System.out.println(n.getId()+" decidiu que "+n.getId()+" é seu predecessor");
+        }else{
+            System.out.println("Não Houveram alterações de predecessor em ID:"+node.getId());
+        }
     }
 
     @Override
     public void fixFingers() throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        System.out.println("Correção de Entrada de FingerTableIniciada");
+        System.out.println("Tabela Atual");
+        printTable();
+        for(int i = 1; i < numBits; i++){
+            System.out.println("Corrigindo entrada:" + i);
+            Node aux = getSucessor((node.getId() + (int)Math.pow(2, i))% (int) Math.pow(2, numBits) );
+            Finger f = new Finger();
+            f.setId(aux.getId());
+            f.setIp(aux.getIp());
+            f.setPort(aux.getPort());
+            node.getFt().set(i,f);
+        }
+        printTable();
+        System.out.println("Correção de Entrada de FingerTable Concluída");
     }
 
     @Override
@@ -413,14 +455,18 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public void setPredecessor(Node n) throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+        synchronized(node.getPred()){
+            node.getPred().setId(n.getId());
+            node.getPred().setIp(n.getIp());
+            node.getPred().setPort(n.getPort());
+        }
+    }  
 
     public int verifyID(Node node) throws TException {
         int trueID = -1;
 
         System.out.println("\nGerando ID... \n");
-        
+
         while (1 == 1) {
             trueID = randomID(node).getId();
             // Abre a conexão com os dados locais do nó e verifica no sucessor se o ID pode ser usado.
@@ -428,18 +474,17 @@ public class Handler implements Thrift.Iface {
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             Chord.Client client = new Chord.Client(protocol);
-            
+
             Node aux = client.getSucessor(trueID); // Pergunta qual é o ID do sucessor
-            
+
             int idAux = aux.getId(); // Variável de verificação de ID
-            
+
             /* Se retornar um ID do sucessor diferente do perguntado 
             ao chord quer dizer que esse ID perguntado pode ser atribuído. 
             Senão continua o loop até encontrar um ID factível. 
             Ex.: Gerou o ID 5 e ao perguntar o sucessor, retornou o 9, 
             logo o 5 pode ser atribuído ao nó local. Caso retornasse o ID 5, 
             teria que gerar outro ID sem ser o 5.*/
-            
             if (idAux != trueID) {
                 System.out.println("ID gerado!");
                 break;
@@ -483,4 +528,12 @@ public class Handler implements Thrift.Iface {
     public static int getID() {
         return node.getId();
     }
+
+    private void printTable() {
+        for (int i = 0; i < numBits; i++) {
+            Finger aux = node.getFt().get(i);
+            System.out.println("Finger ("+i+") |"+ (node.getId() + (long)Math.pow(2, i))% (long) Math.pow(2, numBits) +"| -> "+aux.getId()+"/"+aux.getIp()+":"+aux.getPort());
+        }
+    }
+
 }
