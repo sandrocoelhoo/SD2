@@ -38,9 +38,6 @@ public class Handler implements Thrift.Iface {
         int port = Integer.parseInt(args[1]); //Porta do nó local (Que quer entrar no chord)
         int nodeRaizPort = Integer.parseInt(args[3]); //Porta do nó nodeRaiz
 
-        // Variável de thread usada nas funções fixFingers e Stabilize pra permitir que os nós entrem a qualquer momento ao chord. [Artigo]
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(numBits);
-
         node = new Node();
         node.setFt(new ArrayList<Finger>());
         node.setIp(args[0]); // IP Local
@@ -73,23 +70,34 @@ public class Handler implements Thrift.Iface {
                     + "\n*IP: " + node.getIp()
                     + "\n*Port: " + node.getPort() + "\n");
         }
-        
-        ScheduledFuture scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+
+        /* Variável de thread usada nas funções fixFingers e Stabilize
+        pra permitir que os nós entrem a qualquer momento ao chord. [Artigo]
+        É primeiramente criado um serviço que irá executar as threads com numBits = 5 Threads. 
+        O scheduleWithFixedDelay permite que as threads sejam reexecutadas após o tempo demarcado,
+        porém, existe também um tempo de delay até que a próxima thread inicie após o fim da primeira. 
+        */
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(numBits);
+
+        ScheduledFuture scheduledFutureStabilize = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
+                System.out.println("\n-> Executando estabilização do Chord...");
                 stabilize();
             } catch (TException ex) {
-                System.out.println("Erro ao iniciar Thread de protocolo de estabilização");
+                System.out.println("\n-> Erro ao iniciar Thread de estabilização do Chord.");
                 ex.printStackTrace();
             }
-        }, 10, 10, TimeUnit.SECONDS);
-        ScheduledFuture scheduledFuture2 = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+        }, 10, 5, TimeUnit.SECONDS);
+
+        ScheduledFuture scheduledFutureFixFingers = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
+                System.out.println("\n-> Executando atualização das FT's...");
                 fixFingers();
             } catch (TException ex) {
-                System.out.println("Erro ao iniciar Thread de atualizar entradas da FingerTable");
+                System.out.println("\n-> Erro ao iniciar Thread para atualizar as Finger Tables");
                 ex.printStackTrace();
             }
-        }, 10, 10, TimeUnit.SECONDS);
+        }, 10, 5, TimeUnit.SECONDS);
     }
 
     @Override
@@ -416,16 +424,16 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public void notify(Node n) throws TException {
-        System.out.println(node.getId()+" foi notificado de " + n.getId());
-        if(node.getPred() == null || interval(n.getId(), node.getPred().getId(),true,node.getId(),true)){
+        System.out.println(node.getId() + " foi notificado de " + n.getId());
+        if (node.getPred() == null || interval(n.getId(), node.getPred().getId(), true, node.getId(), true)) {
             Finger aux = new Finger();
             aux.setId(n.getId());
             aux.setIp(n.getIp());
             aux.setPort(n.getPort());
             n.setPred(aux);
-            System.out.println(n.getId()+" decidiu que "+n.getId()+" é seu predecessor");
-        }else{
-            System.out.println("Não Houveram alterações de predecessor em ID:"+node.getId());
+            System.out.println(n.getId() + " decidiu que " + n.getId() + " é seu predecessor");
+        } else {
+            System.out.println("Não Houveram alterações de predecessor em ID:" + node.getId());
         }
     }
 
@@ -434,14 +442,14 @@ public class Handler implements Thrift.Iface {
         System.out.println("Correção de Entrada de FingerTableIniciada");
         System.out.println("Tabela Atual");
         printTable();
-        for(int i = 1; i < numBits; i++){
+        for (int i = 1; i < numBits; i++) {
             System.out.println("Corrigindo entrada:" + i);
-            Node aux = getSucessor((node.getId() + (int)Math.pow(2, i))% (int) Math.pow(2, numBits) );
+            Node aux = getSucessor((node.getId() + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits));
             Finger f = new Finger();
             f.setId(aux.getId());
             f.setIp(aux.getIp());
             f.setPort(aux.getPort());
-            node.getFt().set(i,f);
+            node.getFt().set(i, f);
         }
         printTable();
         System.out.println("Correção de Entrada de FingerTable Concluída");
@@ -455,12 +463,12 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public void setPredecessor(Node n) throws TException {
-        synchronized(node.getPred()){
+        synchronized (node.getPred()) {
             node.getPred().setId(n.getId());
             node.getPred().setIp(n.getIp());
             node.getPred().setPort(n.getPort());
         }
-    }  
+    }
 
     public int verifyID(Node node) throws TException {
         int trueID = -1;
@@ -532,7 +540,7 @@ public class Handler implements Thrift.Iface {
     private void printTable() {
         for (int i = 0; i < numBits; i++) {
             Finger aux = node.getFt().get(i);
-            System.out.println("Finger ("+i+") |"+ (node.getId() + (long)Math.pow(2, i))% (long) Math.pow(2, numBits) +"| -> "+aux.getId()+"/"+aux.getIp()+":"+aux.getPort());
+            System.out.println("Finger (" + i + ") |" + (node.getId() + (long) Math.pow(2, i)) % (long) Math.pow(2, numBits) + "| -> " + aux.getId() + "/" + aux.getIp() + ":" + aux.getPort());
         }
     }
 
