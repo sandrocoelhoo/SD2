@@ -23,9 +23,8 @@ import org.apache.thrift.transport.TTransport;
 
 public class Handler implements Thrift.Iface {
 
-    
     private static final ConcurrentHashMap<Integer, Semaphore> semaphore = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Integer, Vertice> HashVertice;
+    private static final ConcurrentHashMap<Integer, Vertice> HashVertice = new ConcurrentHashMap<Integer, Vertice>();;
     private int id;
     private static Node node, nodeRaiz;
     private static int numBits = 5;
@@ -36,7 +35,6 @@ public class Handler implements Thrift.Iface {
             1ª Vez: localhost 4000 localhost 4000 (IP/Porta Iguais para upar o nó raíz)
             2ª+ Vez: localhost 4001 localhost 4000 (Nó que quer entrar tem que ter porta diferente)
          */
-        this.HashVertice = new ConcurrentHashMap<Integer, Vertice>(); // Instancia hash para funções de vértice e aresta
 
         int port = Integer.parseInt(args[1]); //Porta do nó local (Que quer entrar no chord)
         int nodeRaizPort = Integer.parseInt(args[3]); //Porta do nó nodeRaiz
@@ -108,20 +106,18 @@ public class Handler implements Thrift.Iface {
         // Nó que define onde será colocado o vértice a partir do resto da operação
         Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
 
-        
         // Se o nó ID do nó local for o mesmo ID do vértice auxiliar então já insere, senão 
         // abre uma nova conexão com o nó onde deve ser inserido o vértice e envia pra os dados pra ele. 
         if (node.getId() == aux.getId()) {
             if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
                 return true;
             }
-            System.out.println("\n########semaforo");
             semaphore.putIfAbsent(v.getNome(), new Semaphore(1));
             return true;
 
-        }else{
+        } else {
             System.out.println("\n--> Direcionando para outro servidor...");
-            TTransport transport = new TSocket(aux.getIp(),aux.getPort());
+            TTransport transport = new TSocket(aux.getIp(), aux.getPort());
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             Thrift.Client client = new Thrift.Client(protocol);
@@ -134,10 +130,25 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public Vertice readVertice(int nome) throws TException, KeyNotFound {
-
-        Vertice v = HashVertice.computeIfPresent(nome, (a, b) -> {
-            return b;
-        });
+        
+        Node aux = getSucessor(nome % (int) Math.pow(2, numBits));
+        
+        Vertice v = null;
+        
+        if (aux.getId() == node.getId()){
+        
+            v = HashVertice.computeIfPresent(nome, (a, b) -> {
+                return b;
+            });
+            
+        }else{
+            TTransport transport = new TSocket(aux.getIp(),aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
+            v = client.readVertice(nome);
+            transport.close();
+        }
 
         if (v != null) {
             return v;
@@ -184,10 +195,23 @@ public class Handler implements Thrift.Iface {
     public List<Vertice> readAllVertice() throws TException {
         ArrayList<Vertice> Vertices = new ArrayList<>();
 
-        for (Integer key : HashVertice.keySet()) {
-            Vertices.add(this.readVertice(key));
+        Node aux = getSucessor(node.getId() + 1);
+        TTransport transport = null;
+
+        while (aux.getId() != node.getId()) {
+            transport = new TSocket(aux.getIp(), aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
+            
+            for (Integer key : HashVertice.keySet()) {
+                Vertices.add(this.readVertice(key));
+            }
+            transport.close();
+            aux = getSucessor(aux.getId()+1);
         }
 
+        System.out.println("ID:" + node.getId() + "Todos os vertice recuperados com sucesso.");
         return Vertices;
     }
 
