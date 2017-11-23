@@ -111,11 +111,9 @@ public class Handler implements Thrift.Iface {
         // abre uma nova conexão com o nó onde deve ser inserido o vértice e envia pra os dados pra ele. 
         if (node.getId() == aux.getId()) {
             if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
+                semaphore.putIfAbsent(v.getNome(), new Semaphore(1));
                 return true;
             }
-            semaphore.putIfAbsent(v.getNome(), new Semaphore(1));
-            return true;
-
         } else {
             TTransport transport = new TSocket(aux.getIp(), aux.getPort());
             transport.open();
@@ -130,7 +128,7 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public Vertice readVertice(int nome) throws TException, KeyNotFound {
-
+        // Verifica onde o nó poderá estar se ele existir
         Node aux = getSucessor(nome % (int) Math.pow(2, numBits));
 
         Vertice v = null;
@@ -399,7 +397,6 @@ public class Handler implements Thrift.Iface {
         predecessor mais próximo, pois há casos em em que mesmo encontrando o predecessor
         não é o predecessor que deve ser usado.
          */
-        
         while (!interval(id, aux.getId(), true, aux.getFt().get(0).getId(), false)) {
             if (aux != node) {
                 TTransport transport = new TSocket(aux.getIp(), aux.getPort());
@@ -464,8 +461,8 @@ public class Handler implements Thrift.Iface {
         TProtocol protocol = null;
         Chord.Client client = null;
         fingerAux = node.getFt().get(0); // Pega o primeiro campo da FT do nó local [sucessor]
-            System.out.println("\t #####3 ESTABILIZAÇÃO");
-        
+        System.out.println("\t #####3 ESTABILIZAÇÃO");
+
         if (fingerAux.getId() != node.getId()) {
             System.out.println(" ESTABILIZAÇÃO");
             transport = new TSocket(fingerAux.getIp(), fingerAux.getPort());
@@ -631,8 +628,8 @@ public class Handler implements Thrift.Iface {
             Finger aux = node.getFt().get(i);
 
             System.out.println("(" + i + ") |" + (node.getId() + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits)
-                    + "| -------> ID:" + aux.getId() 
-                    + " IP:" + aux.getIp() 
+                    + "| -------> ID:" + aux.getId()
+                    + " IP:" + aux.getIp()
                     + " PORT:" + aux.getPort());
         }
     }
