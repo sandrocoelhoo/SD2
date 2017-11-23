@@ -24,7 +24,6 @@ import org.apache.thrift.transport.TTransport;
 public class Handler implements Thrift.Iface {
 
     private static final ConcurrentHashMap<Integer, Vertice> HashVertice = new ConcurrentHashMap<Integer, Vertice>();
-    ;
     private int id;
     private static Node node, nodeRaiz;
     private static int numBits = 5;
@@ -109,9 +108,12 @@ public class Handler implements Thrift.Iface {
         // Se o nó ID do nó local for o mesmo ID do vértice auxiliar então já insere, senão 
         // abre uma nova conexão com o nó onde deve ser inserido o vértice e envia pra os dados pra ele. 
         if (node.getId() == aux.getId()) {
-            if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
+            
+            if (Handler.HashVertice.putIfAbsent(v.nome, v) == null) {
+                v.setIdNode(aux.getId());
                 return true;
             } else {
+                System.out.println("\n\n\n\nadfasçdlkfjasçdlkfjasçdlkfj\n\n\n\n\n\n");
                 return false;
             }
         } else {
@@ -122,8 +124,12 @@ public class Handler implements Thrift.Iface {
             client.addVertice(v);
             transport.close();
         }
-
-        return false;
+        
+        // ESSE É O PROBLEMA DA FUNÇÃO, ESSE RETURN true NÃO DEVERIA ESTAR SENDO EXECUTADO
+        // A FUNÇÃO DEVERIA PARAR NAQUELE RETURN FALSE ali de cima, porém não para, e vem pra cá 
+        // aí faz a alteração certinha, mas no client aparece a msg de que foi possível adicionar 
+        // outro vértice... 
+        return true;
     }
 
     @Override
@@ -452,11 +458,6 @@ public class Handler implements Thrift.Iface {
     }
 
     @Override
-    public void transferKeys(Node n) throws TException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
     public void stabilize() throws TException {
 
         /* Método serve para pegar o nó local n, perguntar qual é o sucessor dele,
@@ -566,6 +567,7 @@ public class Handler implements Thrift.Iface {
         }
     }
 
+    @Override
     public int verifyID(Node n) throws TException {
         int trueID = -1;
 
@@ -601,6 +603,7 @@ public class Handler implements Thrift.Iface {
 
     }
 
+    @Override
     public Node randomID(Node node) {
         // Função destinada a geração de um número aleatório dentro do intervalo pre-definido
         int a = (int) (Math.random() * Math.pow(2, numBits));
@@ -609,6 +612,24 @@ public class Handler implements Thrift.Iface {
         return node;
     }
 
+    @Override
+    public void printTable() {
+        for (int i = 0; i < numBits; i++) {
+
+            Finger aux = node.getFt().get(i);
+
+            System.out.println("(" + i + ") |" + (node.getId() + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits)
+                    + "| -------> ID:" + aux.getId()
+                    + " IP:" + aux.getIp()
+                    + " PORT:" + aux.getPort());
+        }
+    }
+
+    @Override
+    public int getIDLocal() throws TException {
+        return node.getId();
+    }
+    
     public static boolean interval(int x, int a, boolean flagOpenA, int b, boolean flagOpenB) {
         //Verifica se x está no intervalo de valores "a" e "b".
         //As flags informam se o intervalo é aberto ou não. 
@@ -627,22 +648,6 @@ public class Handler implements Thrift.Iface {
             }
         }
 
-    }
-
-    public static int getID() {
-        return node.getId();
-    }
-
-    private void printTable() {
-        for (int i = 0; i < numBits; i++) {
-
-            Finger aux = node.getFt().get(i);
-
-            System.out.println("(" + i + ") |" + (node.getId() + (int) Math.pow(2, i)) % (int) Math.pow(2, numBits)
-                    + "| -------> ID:" + aux.getId()
-                    + " IP:" + aux.getIp()
-                    + " PORT:" + aux.getPort());
-        }
     }
 
 }
