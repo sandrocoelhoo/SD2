@@ -111,10 +111,8 @@ public class Handler implements Thrift.Iface {
 
             if (Handler.HashVertice.putIfAbsent(v.nome, v) == null) {
                 v.setIdNode(aux.getId());
-                flagStatic = 1;
                 return true;
             } else {
-                flagStatic = 0;
                 return false;
             }
 
@@ -223,9 +221,9 @@ public class Handler implements Thrift.Iface {
                     }
                 }
 
-                if (HashVertice.remove(v.getNome()) != null) {
+                if (Handler.HashVertice.remove(v.getNome()) != null) {
                     return true;
-                }else{
+                } else {
                     return false;
                 }
 
@@ -235,7 +233,6 @@ public class Handler implements Thrift.Iface {
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             Thrift.Client client = new Thrift.Client(protocol);
-            client.deleteVertice(v);
 
             // Verifica o resultado da função recursiva e retorna o valor para o cliente
             if (client.deleteVertice(v)) {
@@ -248,6 +245,7 @@ public class Handler implements Thrift.Iface {
         }
     }
 
+    @Override
     public List<Vertice> readVerticeNode() throws TException {
         ArrayList<Vertice> Vertices = new ArrayList<>();
 
@@ -273,9 +271,7 @@ public class Handler implements Thrift.Iface {
             TProtocol protocol = new TBinaryProtocol(transport);
             Thrift.Client client = new Thrift.Client(protocol);
 
-            for (Integer key : HashVertice.keySet()) {
-                Vertices.add(this.readVertice(key));
-            }
+            Vertices.addAll(client.readVerticeNode());
             transport.close();
             aux = getSucessor(aux.getId() + 1);
         }
@@ -305,21 +301,28 @@ public class Handler implements Thrift.Iface {
 
             if (v.HashAresta.putIfAbsent(a.getV2(), a) == null) {
                 return true;
+            } else {
+                return false;
             }
         } else {
             TTransport transport = new TSocket(aux.getIp(), aux.getPort());
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             Thrift.Client client = new Thrift.Client(protocol);
-            client.addAresta(a);
-            transport.close();
-        }
 
-        return false;
+            if (client.addAresta(a)) {
+                transport.close();
+                return true;
+            } else {
+                transport.close();
+                return false;
+            }
+        }
     }
 
     @Override
     public Aresta readAresta(int nomeV1, int nomeV2) throws TException {
+
         Vertice vertice;
         vertice = this.readVertice(nomeV1);
 
@@ -337,7 +340,7 @@ public class Handler implements Thrift.Iface {
     }
 
     @Override
-    public List<Aresta> readAllAresta() throws TException { // Tratar concorrência
+    public List<Aresta> readArestaNode() throws TException {
         ArrayList<Aresta> Arestas = new ArrayList<>();
 
         for (Integer keyVertice : HashVertice.keySet()) {
@@ -347,6 +350,49 @@ public class Handler implements Thrift.Iface {
                 }
             }
         }
+
+        return Arestas;
+    }
+
+    @Override
+    public List<Aresta> readAllAresta() throws TException { // Tratar concorrência
+        /*
+
+        Vertices.addAll(readVerticeNode());
+
+        Node aux = getSucessor(node.getId() + 1);
+        TTransport transport = null;
+
+        while (aux.getId() != node.getId()) {
+            transport = new TSocket(aux.getIp(), aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
+
+            Vertices.addAll(client.readVerticeNode());
+            transport.close();
+            aux = getSucessor(aux.getId() + 1);
+        }
+
+        return Vertices;
+         */
+
+        ArrayList<Aresta> Arestas = new ArrayList<>();
+
+        Arestas.addAll(readArestaNode());
+
+        Node aux = getSucessor(node.getId() + 1);
+        TTransport transport = null;
+        
+        while (aux.getId() != node.getId()) {
+            transport = new TSocket(aux.getIp(), aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
+            
+            Arestas.addAll(client.readArestaNode());
+        }
+
         return Arestas;
     }
 
