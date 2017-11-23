@@ -23,7 +23,6 @@ import org.apache.thrift.transport.TTransport;
 
 public class Handler implements Thrift.Iface {
 
-    private static final ConcurrentHashMap<Integer, Semaphore> semaphore = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, Vertice> HashVertice = new ConcurrentHashMap<Integer, Vertice>();
     ;
     private int id;
@@ -111,8 +110,9 @@ public class Handler implements Thrift.Iface {
         // abre uma nova conexão com o nó onde deve ser inserido o vértice e envia pra os dados pra ele. 
         if (node.getId() == aux.getId()) {
             if (this.HashVertice.putIfAbsent(v.nome, v) == null) {
-                semaphore.putIfAbsent(v.getNome(), new Semaphore(1));
                 return true;
+            } else {
+                return false;
             }
         } else {
             TTransport transport = new TSocket(aux.getIp(), aux.getPort());
@@ -188,7 +188,6 @@ public class Handler implements Thrift.Iface {
                 }
 
                 if (HashVertice.remove(v.getNome()) != null) {
-                    semaphore.remove(v.getNome());
                     return true;
                 }
             }
@@ -244,8 +243,20 @@ public class Handler implements Thrift.Iface {
         Vertice v;
         v = this.readVertice(a.getV1());
 
-        if (v.HashAresta.putIfAbsent(a.getV2(), a) == null) {
-            return true;
+        Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
+
+        if (aux.getId() == node.getId()) {
+
+            if (v.HashAresta.putIfAbsent(a.getV2(), a) == null) {
+                return true;
+            }
+        } else {
+            TTransport transport = new TSocket(aux.getIp(), aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
+            client.addAresta(a);
+            transport.close();
         }
 
         return false;
