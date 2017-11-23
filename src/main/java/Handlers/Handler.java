@@ -113,7 +113,6 @@ public class Handler implements Thrift.Iface {
                 v.setIdNode(aux.getId());
                 return true;
             } else {
-                System.out.println("\n\n\n\nadfasçdlkfjasçdlkfjasçdlkfj\n\n\n\n\n\n");
                 return false;
             }
         } else {

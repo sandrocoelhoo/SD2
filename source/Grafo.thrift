@@ -13,8 +13,8 @@ struct Vertice {
 	2:i32 cor,
 	3:string descricao,
 	4:double peso,
-	5:map<i32,Aresta> HashAresta
-
+	5:map<i32,Aresta> HashAresta,
+	6:i32 idNode
 }
 
 exception KeyNotFound {
@@ -34,18 +34,20 @@ struct Finger{
     3:i32 port
 }
 
-
 service Chord {
     void join(1:Node n),
     Node getSucessor(1:i32 id),
     Node getPredecessor(1:i32 id),
     Node closestPrecedingFinger(1:i32 id),
-    void transferKeys(1:Node n),
     void stabilize(),
     void notify(1:Node n),
     void fixFingers(),
     Node sendSelf(),
-    void setPredecessor(1:Node n)
+    void setPredecessor(1:Node n),
+	i32 verifyID(1:Node n),
+	Node randomID(1:Node node),
+	i32 getIDLocal(),
+	void printTable()
 }
 
 service Thrift extends Chord{
@@ -61,5 +63,5 @@ service Thrift extends Chord{
 	list<Aresta> readAllAresta() throws (1:KeyNotFound knf),
 	list<Aresta> readAllArestaOfVertice(1:Vertice v) throws (1:KeyNotFound knf),
 	bool updateAresta(1:Aresta a) throws (1:KeyNotFound knf),
-	bool deleteAresta(1:Aresta a) throws (1:KeyNotFound knf),	
+	bool deleteAresta(1:Aresta a) throws (1:KeyNotFound knf)
 }

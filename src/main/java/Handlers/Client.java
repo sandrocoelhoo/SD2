@@ -66,8 +66,10 @@ public class Client {
                     switch (opcao) {
                         case 1:
                             System.out.println("\n@@@@@ ADICIONAR VERTICE @@@@@ \n");
+                            System.out.println("Estou no nó:" + client.getIDLocal());
                             System.out.print("Nome do vertice-> ");
                             nome = sc.nextInt();
+                            System.out.println("Será colocado no nó:" + client.getSucessor(nome % (int) Math.pow(2, 5)).getId());
                             sc.nextLine();
                             System.out.print("Cor do vertice-> ");
                             cor = sc.nextInt();
@@ -87,7 +89,7 @@ public class Client {
                             v.setHashAresta(HashAresta);
 
                             if (client.addVertice(v)) {
-                                System.out.println("# Vertice adicionado!");
+                                System.out.println("# Vertice adicionado no nó: " + v.getIdNode());
                             } else {
                                 System.out.println("# Problema na insercao do vertice. Repita a operacao.");
                             }
@@ -180,6 +182,7 @@ public class Client {
                                 System.out.println("Cor: " + v.getCor());
                                 System.out.println("Descricao: " + v.getDescricao());
                                 System.out.println("Peso: " + v.getPeso());
+                                System.out.println("ID do Nó: " + v.getIdNode());
 
                             } catch (KeyNotFound e) {
                                 System.out.println("Vertice nao encontrado.");
