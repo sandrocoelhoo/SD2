@@ -64,5 +64,6 @@ service Thrift extends Chord{
 	list<Aresta> readAllArestaOfVertice(1:Vertice v) throws (1:KeyNotFound knf),
 	bool updateAresta(1:Aresta a) throws (1:KeyNotFound knf),
 	bool deleteAresta(1:Aresta a) throws (1:KeyNotFound knf), 
-	list<Vertice> readVerticeNode() throws (1:KeyNotFound knf)
+	list<Vertice> readVerticeNode() throws (1:KeyNotFound knf),
+	list<Aresta> readArestaNode() throws (1:KeyNotFound knf)
 }

@@ -148,8 +148,6 @@ public class Client {
 
                                 switch (certeza) {
                                     case 1:
-                                        //v.setNome(nome);
-
                                         if (client.deleteVertice(v)) {
                                             System.out.println("# Vertice deletado!");
                                         } else {
@@ -200,6 +198,7 @@ public class Client {
                                     System.out.println("Cor: " + vertice.getCor());
                                     System.out.println("Descricao: " + vertice.getDescricao());
                                     System.out.println("Peso: " + vertice.getPeso());
+                                    System.out.println("ID do Nó: " + vertice.getIdNode());
                                 }
                             } catch (KeyNotFound e) {
                                 System.out.println("Vertices nao encontrados.");
@@ -228,6 +227,7 @@ public class Client {
                                     System.out.println("Cor: " + vertice.getCor());
                                     System.out.println("Descricao: " + vertice.getDescricao());
                                     System.out.println("Peso: " + vertice.getPeso());
+                                    System.out.println("ID do Nó: " + vertice.getIdNode());
                                 }
                             } catch (KeyNotFound e) {
                                 System.out.println("Vertice de referencia nao encontrado.");

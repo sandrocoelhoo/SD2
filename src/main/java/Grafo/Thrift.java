@@ -38,6 +38,8 @@ public class Thrift {
 
     public java.util.List<Vertice> readVerticeNode() throws KeyNotFound, org.apache.thrift.TException;
 
+    public java.util.List<Aresta> readArestaNode() throws KeyNotFound, org.apache.thrift.TException;
+
   }
 
   public interface AsyncIface extends Chord .AsyncIface {
@@ -67,6 +69,8 @@ public class Thrift {
     public void deleteAresta(Aresta a, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler) throws org.apache.thrift.TException;
 
     public void readVerticeNode(org.apache.thrift.async.AsyncMethodCallback<java.util.List<Vertice>> resultHandler) throws org.apache.thrift.TException;
+
+    public void readArestaNode(org.apache.thrift.async.AsyncMethodCallback<java.util.List<Aresta>> resultHandler) throws org.apache.thrift.TException;
 
   }
 
@@ -424,6 +428,31 @@ public class Thrift {
         throw result.knf;
       }
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "readVerticeNode failed: unknown result");
+    }
+
+    public java.util.List<Aresta> readArestaNode() throws KeyNotFound, org.apache.thrift.TException
+    {
+      send_readArestaNode();
+      return recv_readArestaNode();
+    }
+
+    public void send_readArestaNode() throws org.apache.thrift.TException
+    {
+      readArestaNode_args args = new readArestaNode_args();
+      sendBase("readArestaNode", args);
+    }
+
+    public java.util.List<Aresta> recv_readArestaNode() throws KeyNotFound, org.apache.thrift.TException
+    {
+      readArestaNode_result result = new readArestaNode_result();
+      receiveBase(result, "readArestaNode");
+      if (result.isSetSuccess()) {
+        return result.success;
+      }
+      if (result.knf != null) {
+        throw result.knf;
+      }
+      throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "readArestaNode failed: unknown result");
     }
 
   }
@@ -854,6 +883,35 @@ public class Thrift {
       }
     }
 
+    public void readArestaNode(org.apache.thrift.async.AsyncMethodCallback<java.util.List<Aresta>> resultHandler) throws org.apache.thrift.TException {
+      checkReady();
+      readArestaNode_call method_call = new readArestaNode_call(resultHandler, this, ___protocolFactory, ___transport);
+      this.___currentMethod = method_call;
+      ___manager.call(method_call);
+    }
+
+    public static class readArestaNode_call extends org.apache.thrift.async.TAsyncMethodCall<java.util.List<Aresta>> {
+      public readArestaNode_call(org.apache.thrift.async.AsyncMethodCallback<java.util.List<Aresta>> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+        super(client, protocolFactory, transport, resultHandler, false);
+      }
+
+      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+        prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("readArestaNode", org.apache.thrift.protocol.TMessageType.CALL, 0));
+        readArestaNode_args args = new readArestaNode_args();
+        args.write(prot);
+        prot.writeMessageEnd();
+      }
+
+      public java.util.List<Aresta> getResult() throws KeyNotFound, org.apache.thrift.TException {
+        if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
+          throw new java.lang.IllegalStateException("Method call not finished!");
+        }
+        org.apache.thrift.transport.TMemoryInputTransport memoryTransport = new org.apache.thrift.transport.TMemoryInputTransport(getFrameBuffer().array());
+        org.apache.thrift.protocol.TProtocol prot = client.getProtocolFactory().getProtocol(memoryTransport);
+        return (new Client(prot)).recv_readArestaNode();
+      }
+    }
+
   }
 
   public static class Processor<I extends Iface> extends Chord.Processor<I> implements org.apache.thrift.TProcessor {
@@ -880,6 +938,7 @@ public class Thrift {
       processMap.put("updateAresta", new updateAresta());
       processMap.put("deleteAresta", new deleteAresta());
       processMap.put("readVerticeNode", new readVerticeNode());
+      processMap.put("readArestaNode", new readArestaNode());
       return processMap;
     }
 
@@ -1201,6 +1260,30 @@ public class Thrift {
       }
     }
 
+    public static class readArestaNode<I extends Iface> extends org.apache.thrift.ProcessFunction<I, readArestaNode_args> {
+      public readArestaNode() {
+        super("readArestaNode");
+      }
+
+      public readArestaNode_args getEmptyArgsInstance() {
+        return new readArestaNode_args();
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public readArestaNode_result getResult(I iface, readArestaNode_args args) throws org.apache.thrift.TException {
+        readArestaNode_result result = new readArestaNode_result();
+        try {
+          result.success = iface.readArestaNode();
+        } catch (KeyNotFound knf) {
+          result.knf = knf;
+        }
+        return result;
+      }
+    }
+
   }
 
   public static class AsyncProcessor<I extends AsyncIface> extends Chord.AsyncProcessor<I> {
@@ -1227,6 +1310,7 @@ public class Thrift {
       processMap.put("updateAresta", new updateAresta());
       processMap.put("deleteAresta", new deleteAresta());
       processMap.put("readVerticeNode", new readVerticeNode());
+      processMap.put("readArestaNode", new readArestaNode());
       return processMap;
     }
 
@@ -2078,6 +2162,71 @@ public class Thrift {
 
       public void start(I iface, readVerticeNode_args args, org.apache.thrift.async.AsyncMethodCallback<java.util.List<Vertice>> resultHandler) throws org.apache.thrift.TException {
         iface.readVerticeNode(resultHandler);
+      }
+    }
+
+    public static class readArestaNode<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, readArestaNode_args, java.util.List<Aresta>> {
+      public readArestaNode() {
+        super("readArestaNode");
+      }
+
+      public readArestaNode_args getEmptyArgsInstance() {
+        return new readArestaNode_args();
+      }
+
+      public org.apache.thrift.async.AsyncMethodCallback<java.util.List<Aresta>> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
+        final org.apache.thrift.AsyncProcessFunction fcall = this;
+        return new org.apache.thrift.async.AsyncMethodCallback<java.util.List<Aresta>>() { 
+          public void onComplete(java.util.List<Aresta> o) {
+            readArestaNode_result result = new readArestaNode_result();
+            result.success = o;
+            try {
+              fcall.sendResponse(fb, result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
+            } catch (org.apache.thrift.transport.TTransportException e) {
+              _LOGGER.error("TTransportException writing to internal frame buffer", e);
+              fb.close();
+            } catch (java.lang.Exception e) {
+              _LOGGER.error("Exception writing to internal frame buffer", e);
+              onError(e);
+            }
+          }
+          public void onError(java.lang.Exception e) {
+            byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
+            org.apache.thrift.TSerializable msg;
+            readArestaNode_result result = new readArestaNode_result();
+            if (e instanceof KeyNotFound) {
+              result.knf = (KeyNotFound) e;
+              result.setKnfIsSet(true);
+              msg = result;
+            } else if (e instanceof org.apache.thrift.transport.TTransportException) {
+              _LOGGER.error("TTransportException inside handler", e);
+              fb.close();
+              return;
+            } else if (e instanceof org.apache.thrift.TApplicationException) {
+              _LOGGER.error("TApplicationException inside handler", e);
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = (org.apache.thrift.TApplicationException)e;
+            } else {
+              _LOGGER.error("Exception inside handler", e);
+              msgType = org.apache.thrift.protocol.TMessageType.EXCEPTION;
+              msg = new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.INTERNAL_ERROR, e.getMessage());
+            }
+            try {
+              fcall.sendResponse(fb,msg,msgType,seqid);
+            } catch (java.lang.Exception ex) {
+              _LOGGER.error("Exception writing to internal frame buffer", ex);
+              fb.close();
+            }
+          }
+        };
+      }
+
+      protected boolean isOneway() {
+        return false;
+      }
+
+      public void start(I iface, readArestaNode_args args, org.apache.thrift.async.AsyncMethodCallback<java.util.List<Aresta>> resultHandler) throws org.apache.thrift.TException {
+        iface.readArestaNode(resultHandler);
       }
     }
 
@@ -12916,6 +13065,778 @@ public class Thrift {
               _elem56 = new Vertice();
               _elem56.read(iprot);
               struct.success.add(_elem56);
+            }
+          }
+          struct.setSuccessIsSet(true);
+        }
+        if (incoming.get(1)) {
+          struct.knf = new KeyNotFound();
+          struct.knf.read(iprot);
+          struct.setKnfIsSet(true);
+        }
+      }
+    }
+
+    private static <S extends org.apache.thrift.scheme.IScheme> S scheme(org.apache.thrift.protocol.TProtocol proto) {
+      return (org.apache.thrift.scheme.StandardScheme.class.equals(proto.getScheme()) ? STANDARD_SCHEME_FACTORY : TUPLE_SCHEME_FACTORY).getScheme();
+    }
+  }
+
+  public static class readArestaNode_args implements org.apache.thrift.TBase<readArestaNode_args, readArestaNode_args._Fields>, java.io.Serializable, Cloneable, Comparable<readArestaNode_args>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("readArestaNode_args");
+
+
+    private static final org.apache.thrift.scheme.SchemeFactory STANDARD_SCHEME_FACTORY = new readArestaNode_argsStandardSchemeFactory();
+    private static final org.apache.thrift.scheme.SchemeFactory TUPLE_SCHEME_FACTORY = new readArestaNode_argsTupleSchemeFactory();
+
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+;
+
+      private static final java.util.Map<java.lang.String, _Fields> byName = new java.util.HashMap<java.lang.String, _Fields>();
+
+      static {
+        for (_Fields field : java.util.EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new java.lang.IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(java.lang.String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final java.lang.String _fieldName;
+
+      _Fields(short thriftId, java.lang.String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public java.lang.String getFieldName() {
+        return _fieldName;
+      }
+    }
+    public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(readArestaNode_args.class, metaDataMap);
+    }
+
+    public readArestaNode_args() {
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public readArestaNode_args(readArestaNode_args other) {
+    }
+
+    public readArestaNode_args deepCopy() {
+      return new readArestaNode_args(this);
+    }
+
+    @Override
+    public void clear() {
+    }
+
+    public void setFieldValue(_Fields field, java.lang.Object value) {
+      switch (field) {
+      }
+    }
+
+    public java.lang.Object getFieldValue(_Fields field) {
+      switch (field) {
+      }
+      throw new java.lang.IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new java.lang.IllegalArgumentException();
+      }
+
+      switch (field) {
+      }
+      throw new java.lang.IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(java.lang.Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof readArestaNode_args)
+        return this.equals((readArestaNode_args)that);
+      return false;
+    }
+
+    public boolean equals(readArestaNode_args that) {
+      if (that == null)
+        return false;
+      if (this == that)
+        return true;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int hashCode = 1;
+
+      return hashCode;
+    }
+
+    @Override
+    public int compareTo(readArestaNode_args other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      scheme(iprot).read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      scheme(oprot).write(oprot, this);
+    }
+
+    @Override
+    public java.lang.String toString() {
+      java.lang.StringBuilder sb = new java.lang.StringBuilder("readArestaNode_args(");
+      boolean first = true;
+
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, java.lang.ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class readArestaNode_argsStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
+      public readArestaNode_argsStandardScheme getScheme() {
+        return new readArestaNode_argsStandardScheme();
+      }
+    }
+
+    private static class readArestaNode_argsStandardScheme extends org.apache.thrift.scheme.StandardScheme<readArestaNode_args> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, readArestaNode_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, readArestaNode_args struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class readArestaNode_argsTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
+      public readArestaNode_argsTupleScheme getScheme() {
+        return new readArestaNode_argsTupleScheme();
+      }
+    }
+
+    private static class readArestaNode_argsTupleScheme extends org.apache.thrift.scheme.TupleScheme<readArestaNode_args> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, readArestaNode_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TTupleProtocol oprot = (org.apache.thrift.protocol.TTupleProtocol) prot;
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, readArestaNode_args struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TTupleProtocol iprot = (org.apache.thrift.protocol.TTupleProtocol) prot;
+      }
+    }
+
+    private static <S extends org.apache.thrift.scheme.IScheme> S scheme(org.apache.thrift.protocol.TProtocol proto) {
+      return (org.apache.thrift.scheme.StandardScheme.class.equals(proto.getScheme()) ? STANDARD_SCHEME_FACTORY : TUPLE_SCHEME_FACTORY).getScheme();
+    }
+  }
+
+  public static class readArestaNode_result implements org.apache.thrift.TBase<readArestaNode_result, readArestaNode_result._Fields>, java.io.Serializable, Cloneable, Comparable<readArestaNode_result>   {
+    private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("readArestaNode_result");
+
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.LIST, (short)0);
+    private static final org.apache.thrift.protocol.TField KNF_FIELD_DESC = new org.apache.thrift.protocol.TField("knf", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+
+    private static final org.apache.thrift.scheme.SchemeFactory STANDARD_SCHEME_FACTORY = new readArestaNode_resultStandardSchemeFactory();
+    private static final org.apache.thrift.scheme.SchemeFactory TUPLE_SCHEME_FACTORY = new readArestaNode_resultTupleSchemeFactory();
+
+    public java.util.List<Aresta> success; // required
+    public KeyNotFound knf; // required
+
+    /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
+    public enum _Fields implements org.apache.thrift.TFieldIdEnum {
+      SUCCESS((short)0, "success"),
+      KNF((short)1, "knf");
+
+      private static final java.util.Map<java.lang.String, _Fields> byName = new java.util.HashMap<java.lang.String, _Fields>();
+
+      static {
+        for (_Fields field : java.util.EnumSet.allOf(_Fields.class)) {
+          byName.put(field.getFieldName(), field);
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, or null if its not found.
+       */
+      public static _Fields findByThriftId(int fieldId) {
+        switch(fieldId) {
+          case 0: // SUCCESS
+            return SUCCESS;
+          case 1: // KNF
+            return KNF;
+          default:
+            return null;
+        }
+      }
+
+      /**
+       * Find the _Fields constant that matches fieldId, throwing an exception
+       * if it is not found.
+       */
+      public static _Fields findByThriftIdOrThrow(int fieldId) {
+        _Fields fields = findByThriftId(fieldId);
+        if (fields == null) throw new java.lang.IllegalArgumentException("Field " + fieldId + " doesn't exist!");
+        return fields;
+      }
+
+      /**
+       * Find the _Fields constant that matches name, or null if its not found.
+       */
+      public static _Fields findByName(java.lang.String name) {
+        return byName.get(name);
+      }
+
+      private final short _thriftId;
+      private final java.lang.String _fieldName;
+
+      _Fields(short thriftId, java.lang.String fieldName) {
+        _thriftId = thriftId;
+        _fieldName = fieldName;
+      }
+
+      public short getThriftFieldId() {
+        return _thriftId;
+      }
+
+      public java.lang.String getFieldName() {
+        return _fieldName;
+      }
+    }
+
+    // isset id assignments
+    public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
+    static {
+      java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
+              new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, Aresta.class))));
+      tmpMap.put(_Fields.KNF, new org.apache.thrift.meta_data.FieldMetaData("knf", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+          new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, KeyNotFound.class)));
+      metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
+      org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(readArestaNode_result.class, metaDataMap);
+    }
+
+    public readArestaNode_result() {
+    }
+
+    public readArestaNode_result(
+      java.util.List<Aresta> success,
+      KeyNotFound knf)
+    {
+      this();
+      this.success = success;
+      this.knf = knf;
+    }
+
+    /**
+     * Performs a deep copy on <i>other</i>.
+     */
+    public readArestaNode_result(readArestaNode_result other) {
+      if (other.isSetSuccess()) {
+        java.util.List<Aresta> __this__success = new java.util.ArrayList<Aresta>(other.success.size());
+        for (Aresta other_element : other.success) {
+          __this__success.add(new Aresta(other_element));
+        }
+        this.success = __this__success;
+      }
+      if (other.isSetKnf()) {
+        this.knf = new KeyNotFound(other.knf);
+      }
+    }
+
+    public readArestaNode_result deepCopy() {
+      return new readArestaNode_result(this);
+    }
+
+    @Override
+    public void clear() {
+      this.success = null;
+      this.knf = null;
+    }
+
+    public int getSuccessSize() {
+      return (this.success == null) ? 0 : this.success.size();
+    }
+
+    public java.util.Iterator<Aresta> getSuccessIterator() {
+      return (this.success == null) ? null : this.success.iterator();
+    }
+
+    public void addToSuccess(Aresta elem) {
+      if (this.success == null) {
+        this.success = new java.util.ArrayList<Aresta>();
+      }
+      this.success.add(elem);
+    }
+
+    public java.util.List<Aresta> getSuccess() {
+      return this.success;
+    }
+
+    public readArestaNode_result setSuccess(java.util.List<Aresta> success) {
+      this.success = success;
+      return this;
+    }
+
+    public void unsetSuccess() {
+      this.success = null;
+    }
+
+    /** Returns true if field success is set (has been assigned a value) and false otherwise */
+    public boolean isSetSuccess() {
+      return this.success != null;
+    }
+
+    public void setSuccessIsSet(boolean value) {
+      if (!value) {
+        this.success = null;
+      }
+    }
+
+    public KeyNotFound getKnf() {
+      return this.knf;
+    }
+
+    public readArestaNode_result setKnf(KeyNotFound knf) {
+      this.knf = knf;
+      return this;
+    }
+
+    public void unsetKnf() {
+      this.knf = null;
+    }
+
+    /** Returns true if field knf is set (has been assigned a value) and false otherwise */
+    public boolean isSetKnf() {
+      return this.knf != null;
+    }
+
+    public void setKnfIsSet(boolean value) {
+      if (!value) {
+        this.knf = null;
+      }
+    }
+
+    public void setFieldValue(_Fields field, java.lang.Object value) {
+      switch (field) {
+      case SUCCESS:
+        if (value == null) {
+          unsetSuccess();
+        } else {
+          setSuccess((java.util.List<Aresta>)value);
+        }
+        break;
+
+      case KNF:
+        if (value == null) {
+          unsetKnf();
+        } else {
+          setKnf((KeyNotFound)value);
+        }
+        break;
+
+      }
+    }
+
+    public java.lang.Object getFieldValue(_Fields field) {
+      switch (field) {
+      case SUCCESS:
+        return getSuccess();
+
+      case KNF:
+        return getKnf();
+
+      }
+      throw new java.lang.IllegalStateException();
+    }
+
+    /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
+    public boolean isSet(_Fields field) {
+      if (field == null) {
+        throw new java.lang.IllegalArgumentException();
+      }
+
+      switch (field) {
+      case SUCCESS:
+        return isSetSuccess();
+      case KNF:
+        return isSetKnf();
+      }
+      throw new java.lang.IllegalStateException();
+    }
+
+    @Override
+    public boolean equals(java.lang.Object that) {
+      if (that == null)
+        return false;
+      if (that instanceof readArestaNode_result)
+        return this.equals((readArestaNode_result)that);
+      return false;
+    }
+
+    public boolean equals(readArestaNode_result that) {
+      if (that == null)
+        return false;
+      if (this == that)
+        return true;
+
+      boolean this_present_success = true && this.isSetSuccess();
+      boolean that_present_success = true && that.isSetSuccess();
+      if (this_present_success || that_present_success) {
+        if (!(this_present_success && that_present_success))
+          return false;
+        if (!this.success.equals(that.success))
+          return false;
+      }
+
+      boolean this_present_knf = true && this.isSetKnf();
+      boolean that_present_knf = true && that.isSetKnf();
+      if (this_present_knf || that_present_knf) {
+        if (!(this_present_knf && that_present_knf))
+          return false;
+        if (!this.knf.equals(that.knf))
+          return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int hashCode = 1;
+
+      hashCode = hashCode * 8191 + ((isSetSuccess()) ? 131071 : 524287);
+      if (isSetSuccess())
+        hashCode = hashCode * 8191 + success.hashCode();
+
+      hashCode = hashCode * 8191 + ((isSetKnf()) ? 131071 : 524287);
+      if (isSetKnf())
+        hashCode = hashCode * 8191 + knf.hashCode();
+
+      return hashCode;
+    }
+
+    @Override
+    public int compareTo(readArestaNode_result other) {
+      if (!getClass().equals(other.getClass())) {
+        return getClass().getName().compareTo(other.getClass().getName());
+      }
+
+      int lastComparison = 0;
+
+      lastComparison = java.lang.Boolean.valueOf(isSetSuccess()).compareTo(other.isSetSuccess());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetSuccess()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.success, other.success);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      lastComparison = java.lang.Boolean.valueOf(isSetKnf()).compareTo(other.isSetKnf());
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+      if (isSetKnf()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.knf, other.knf);
+        if (lastComparison != 0) {
+          return lastComparison;
+        }
+      }
+      return 0;
+    }
+
+    public _Fields fieldForId(int fieldId) {
+      return _Fields.findByThriftId(fieldId);
+    }
+
+    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+      scheme(iprot).read(iprot, this);
+    }
+
+    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+      scheme(oprot).write(oprot, this);
+      }
+
+    @Override
+    public java.lang.String toString() {
+      java.lang.StringBuilder sb = new java.lang.StringBuilder("readArestaNode_result(");
+      boolean first = true;
+
+      sb.append("success:");
+      if (this.success == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.success);
+      }
+      first = false;
+      if (!first) sb.append(", ");
+      sb.append("knf:");
+      if (this.knf == null) {
+        sb.append("null");
+      } else {
+        sb.append(this.knf);
+      }
+      first = false;
+      sb.append(")");
+      return sb.toString();
+    }
+
+    public void validate() throws org.apache.thrift.TException {
+      // check for required fields
+      // check for sub-struct validity
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+      try {
+        write(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(out)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, java.lang.ClassNotFoundException {
+      try {
+        read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
+      } catch (org.apache.thrift.TException te) {
+        throw new java.io.IOException(te);
+      }
+    }
+
+    private static class readArestaNode_resultStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
+      public readArestaNode_resultStandardScheme getScheme() {
+        return new readArestaNode_resultStandardScheme();
+      }
+    }
+
+    private static class readArestaNode_resultStandardScheme extends org.apache.thrift.scheme.StandardScheme<readArestaNode_result> {
+
+      public void read(org.apache.thrift.protocol.TProtocol iprot, readArestaNode_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TField schemeField;
+        iprot.readStructBegin();
+        while (true)
+        {
+          schemeField = iprot.readFieldBegin();
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+            break;
+          }
+          switch (schemeField.id) {
+            case 0: // SUCCESS
+              if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
+                {
+                  org.apache.thrift.protocol.TList _list58 = iprot.readListBegin();
+                  struct.success = new java.util.ArrayList<Aresta>(_list58.size);
+                  Aresta _elem59;
+                  for (int _i60 = 0; _i60 < _list58.size; ++_i60)
+                  {
+                    _elem59 = new Aresta();
+                    _elem59.read(iprot);
+                    struct.success.add(_elem59);
+                  }
+                  iprot.readListEnd();
+                }
+                struct.setSuccessIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            case 1: // KNF
+              if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+                struct.knf = new KeyNotFound();
+                struct.knf.read(iprot);
+                struct.setKnfIsSet(true);
+              } else { 
+                org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+              }
+              break;
+            default:
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+          }
+          iprot.readFieldEnd();
+        }
+        iprot.readStructEnd();
+
+        // check for required fields of primitive type, which can't be checked in the validate method
+        struct.validate();
+      }
+
+      public void write(org.apache.thrift.protocol.TProtocol oprot, readArestaNode_result struct) throws org.apache.thrift.TException {
+        struct.validate();
+
+        oprot.writeStructBegin(STRUCT_DESC);
+        if (struct.success != null) {
+          oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
+          {
+            oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, struct.success.size()));
+            for (Aresta _iter61 : struct.success)
+            {
+              _iter61.write(oprot);
+            }
+            oprot.writeListEnd();
+          }
+          oprot.writeFieldEnd();
+        }
+        if (struct.knf != null) {
+          oprot.writeFieldBegin(KNF_FIELD_DESC);
+          struct.knf.write(oprot);
+          oprot.writeFieldEnd();
+        }
+        oprot.writeFieldStop();
+        oprot.writeStructEnd();
+      }
+
+    }
+
+    private static class readArestaNode_resultTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
+      public readArestaNode_resultTupleScheme getScheme() {
+        return new readArestaNode_resultTupleScheme();
+      }
+    }
+
+    private static class readArestaNode_resultTupleScheme extends org.apache.thrift.scheme.TupleScheme<readArestaNode_result> {
+
+      @Override
+      public void write(org.apache.thrift.protocol.TProtocol prot, readArestaNode_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TTupleProtocol oprot = (org.apache.thrift.protocol.TTupleProtocol) prot;
+        java.util.BitSet optionals = new java.util.BitSet();
+        if (struct.isSetSuccess()) {
+          optionals.set(0);
+        }
+        if (struct.isSetKnf()) {
+          optionals.set(1);
+        }
+        oprot.writeBitSet(optionals, 2);
+        if (struct.isSetSuccess()) {
+          {
+            oprot.writeI32(struct.success.size());
+            for (Aresta _iter62 : struct.success)
+            {
+              _iter62.write(oprot);
+            }
+          }
+        }
+        if (struct.isSetKnf()) {
+          struct.knf.write(oprot);
+        }
+      }
+
+      @Override
+      public void read(org.apache.thrift.protocol.TProtocol prot, readArestaNode_result struct) throws org.apache.thrift.TException {
+        org.apache.thrift.protocol.TTupleProtocol iprot = (org.apache.thrift.protocol.TTupleProtocol) prot;
+        java.util.BitSet incoming = iprot.readBitSet(2);
+        if (incoming.get(0)) {
+          {
+            org.apache.thrift.protocol.TList _list63 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRUCT, iprot.readI32());
+            struct.success = new java.util.ArrayList<Aresta>(_list63.size);
+            Aresta _elem64;
+            for (int _i65 = 0; _i65 < _list63.size; ++_i65)
+            {
+              _elem64 = new Aresta();
+              _elem64.read(iprot);
+              struct.success.add(_elem64);
             }
           }
           struct.setSuccessIsSet(true);
