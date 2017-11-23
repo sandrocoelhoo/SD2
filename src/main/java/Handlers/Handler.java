@@ -104,15 +104,17 @@ public class Handler implements Thrift.Iface {
     public boolean addVertice(Vertice v) throws TException {
         // Nó que define onde será colocado o vértice a partir do resto da operação
         Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
-
+        int gambira = -1;
         // Se o nó ID do nó local for o mesmo ID do vértice auxiliar então já insere, senão 
         // abre uma nova conexão com o nó onde deve ser inserido o vértice e envia pra os dados pra ele. 
         if (node.getId() == aux.getId()) {
-            
+
             if (Handler.HashVertice.putIfAbsent(v.nome, v) == null) {
                 v.setIdNode(aux.getId());
+                gambira = 1;
                 return true;
             } else {
+                gambira = 0;
                 return false;
             }
         } else {
@@ -122,13 +124,14 @@ public class Handler implements Thrift.Iface {
             Thrift.Client client = new Thrift.Client(protocol);
             client.addVertice(v);
             transport.close();
+
         }
-        
-        // ESSE É O PROBLEMA DA FUNÇÃO, ESSE RETURN true NÃO DEVERIA ESTAR SENDO EXECUTADO
-        // A FUNÇÃO DEVERIA PARAR NAQUELE RETURN FALSE ali de cima, porém não para, e vem pra cá 
-        // aí faz a alteração certinha, mas no client aparece a msg de que foi possível adicionar 
-        // outro vértice... 
-        return true;
+
+        if (gambira == 0) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     @Override
@@ -628,7 +631,7 @@ public class Handler implements Thrift.Iface {
     public int getIDLocal() throws TException {
         return node.getId();
     }
-    
+
     public static boolean interval(int x, int a, boolean flagOpenA, int b, boolean flagOpenB) {
         //Verifica se x está no intervalo de valores "a" e "b".
         //As flags informam se o intervalo é aberto ou não. 
