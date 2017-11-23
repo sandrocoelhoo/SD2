@@ -213,6 +213,7 @@ public class Handler implements Thrift.Iface {
                     a = this.readAresta(v.HashAresta.get(key).getV1(), v.HashAresta.get(key).getV2());
                     this.deleteAresta(a);
                 }
+                
                 for (Integer keyVertice : HashVertice.keySet()) {
                     for (Integer keyAresta : HashVertice.get(keyVertice).HashAresta.keySet()) {
                         if (HashVertice.get(keyVertice).HashAresta.get(keyAresta).getV2() == v.getNome()) {
@@ -355,27 +356,7 @@ public class Handler implements Thrift.Iface {
     }
 
     @Override
-    public List<Aresta> readAllAresta() throws TException { // Tratar concorrência
-        /*
-
-        Vertices.addAll(readVerticeNode());
-
-        Node aux = getSucessor(node.getId() + 1);
-        TTransport transport = null;
-
-        while (aux.getId() != node.getId()) {
-            transport = new TSocket(aux.getIp(), aux.getPort());
-            transport.open();
-            TProtocol protocol = new TBinaryProtocol(transport);
-            Thrift.Client client = new Thrift.Client(protocol);
-
-            Vertices.addAll(client.readVerticeNode());
-            transport.close();
-            aux = getSucessor(aux.getId() + 1);
-        }
-
-        return Vertices;
-         */
+    public List<Aresta> readAllAresta() throws TException {
 
         ArrayList<Aresta> Arestas = new ArrayList<>();
 
@@ -391,13 +372,15 @@ public class Handler implements Thrift.Iface {
             Thrift.Client client = new Thrift.Client(protocol);
             
             Arestas.addAll(client.readArestaNode());
+            transport.close();
+            aux = getSucessor(aux.getId() + 1);
         }
 
         return Arestas;
     }
 
     @Override
-    public List<Aresta> readAllArestaOfVertice(Vertice v) throws TException { // Tratar concorrência
+    public List<Aresta> readAllArestaOfVertice(Vertice v) throws TException {
         ArrayList<Aresta> Arestas = new ArrayList<>();
         Vertice vertice;
 
@@ -427,7 +410,7 @@ public class Handler implements Thrift.Iface {
     }
 
     @Override
-    public boolean deleteAresta(Aresta a) throws KeyNotFound, TException {
+    public boolean deleteAresta(Aresta a) throws KeyNotFound, TException {    
         synchronized (a) {
             Vertice v1 = this.readVertice(a.getV1());
             Vertice v2 = this.readVertice(a.getV2());

@@ -89,7 +89,7 @@ public class Client {
                             v.setHashAresta(HashAresta);
 
                             if (client.addVertice(v)) {
-                                System.out.println("# Vertice adicionado no nó: " + v.getIdNode());
+                                System.out.println("# Vertice adicionado!");
                             } else {
                                 System.out.println("# Problema na insercao do vertice. Repita a operacao.");
                             }
