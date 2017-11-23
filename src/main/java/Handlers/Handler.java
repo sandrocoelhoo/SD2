@@ -211,10 +211,22 @@ public class Handler implements Thrift.Iface {
         return false;
     }
 
+    public List<Vertice> readVerticeNode() throws TException {
+        ArrayList<Vertice> Vertices = new ArrayList<>();
+
+        for (Integer key : HashVertice.keySet()) {
+            Vertices.add(this.readVertice(key));
+        }
+
+        return Vertices;
+    }
+
     @Override
     public List<Vertice> readAllVertice() throws TException {
         ArrayList<Vertice> Vertices = new ArrayList<>();
 
+        Vertices.addAll(readVerticeNode());
+        
         Node aux = getSucessor(node.getId() + 1);
         TTransport transport = null;
 
