@@ -24,7 +24,7 @@ import org.apache.thrift.transport.TTransport;
 public class Handler implements Thrift.Iface {
 
     private static final ConcurrentHashMap<Integer, Vertice> HashVertice = new ConcurrentHashMap<Integer, Vertice>();
-    private int id;
+    private int id, flagStatic = -1;
     private static Node node, nodeRaiz;
     private static int numBits = 5;
 
@@ -104,33 +104,34 @@ public class Handler implements Thrift.Iface {
     public boolean addVertice(Vertice v) throws TException {
         // Nó que define onde será colocado o vértice a partir do resto da operação
         Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
-        int gambira = -1;
+
         // Se o nó ID do nó local for o mesmo ID do vértice auxiliar então já insere, senão 
         // abre uma nova conexão com o nó onde deve ser inserido o vértice e envia pra os dados pra ele. 
         if (node.getId() == aux.getId()) {
 
             if (Handler.HashVertice.putIfAbsent(v.nome, v) == null) {
                 v.setIdNode(aux.getId());
-                gambira = 1;
+                flagStatic = 1;
                 return true;
             } else {
-                gambira = 0;
+                flagStatic = 0;
                 return false;
             }
+
         } else {
             TTransport transport = new TSocket(aux.getIp(), aux.getPort());
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             Thrift.Client client = new Thrift.Client(protocol);
-            client.addVertice(v);
-            transport.close();
 
-        }
-
-        if (gambira == 0) {
-            return false;
-        } else {
-            return true;
+            // Verifica o resultado da função recursiva e retorna o valor para o cliente
+            if (client.addVertice(v)) {
+                transport.close();
+                return true;
+            } else {
+                transport.close();
+                return false;
+            }
         }
     }
 
@@ -166,18 +167,37 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public boolean updateVertice(Vertice v) throws KeyNotFound, TException {
-        try {
-            Vertice vertice = readVertice(v.getNome());
+        // Verifica onde o nó poderá estar se ele existir
+        Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
 
-            synchronized (vertice) {
-                vertice.setCor(v.getCor());
-                vertice.setDescricao(v.getDescricao());
-                vertice.setPeso(v.getPeso());
-                return true;
+        if (aux.getId() == node.getId()) {
+            try {
+                Vertice vertice = readVertice(v.getNome());
+
+                synchronized (vertice) {
+                    vertice.setCor(v.getCor());
+                    vertice.setDescricao(v.getDescricao());
+                    vertice.setPeso(v.getPeso());
+                    return true;
+                }
+
+            } catch (KeyNotFound e) {
+                return false;
             }
+        } else {
+            TTransport transport = new TSocket(aux.getIp(), aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
 
-        } catch (KeyNotFound e) {
-            return false;
+            // Verifica o resultado da função recursiva e retorna o valor para o cliente
+            if (client.updateVertice(v)) {
+                transport.close();
+                return true;
+            } else {
+                transport.close();
+                return false;
+            }
         }
     }
 
@@ -189,15 +209,26 @@ public class Handler implements Thrift.Iface {
         Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
 
         if (aux.getId() == node.getId()) {
+
             synchronized (v) {
                 for (Integer key : v.HashAresta.keySet()) {
                     a = this.readAresta(v.HashAresta.get(key).getV1(), v.HashAresta.get(key).getV2());
                     this.deleteAresta(a);
                 }
+                for (Integer keyVertice : HashVertice.keySet()) {
+                    for (Integer keyAresta : HashVertice.get(keyVertice).HashAresta.keySet()) {
+                        if (HashVertice.get(keyVertice).HashAresta.get(keyAresta).getV2() == v.getNome()) {
+                            this.deleteAresta(HashVertice.get(keyVertice).HashAresta.get(keyAresta));
+                        }
+                    }
+                }
 
                 if (HashVertice.remove(v.getNome()) != null) {
                     return true;
+                }else{
+                    return false;
                 }
+
             }
         } else {
             TTransport transport = new TSocket(aux.getIp(), aux.getPort());
@@ -205,10 +236,16 @@ public class Handler implements Thrift.Iface {
             TProtocol protocol = new TBinaryProtocol(transport);
             Thrift.Client client = new Thrift.Client(protocol);
             client.deleteVertice(v);
-            transport.close();
-        }
 
-        return false;
+            // Verifica o resultado da função recursiva e retorna o valor para o cliente
+            if (client.deleteVertice(v)) {
+                transport.close();
+                return true;
+            } else {
+                transport.close();
+                return false;
+            }
+        }
     }
 
     public List<Vertice> readVerticeNode() throws TException {
@@ -226,7 +263,7 @@ public class Handler implements Thrift.Iface {
         ArrayList<Vertice> Vertices = new ArrayList<>();
 
         Vertices.addAll(readVerticeNode());
-        
+
         Node aux = getSucessor(node.getId() + 1);
         TTransport transport = null;
 
@@ -243,7 +280,6 @@ public class Handler implements Thrift.Iface {
             aux = getSucessor(aux.getId() + 1);
         }
 
-        System.out.println("ID:" + node.getId() + "Todos os vertice recuperados com sucesso.");
         return Vertices;
     }
 
