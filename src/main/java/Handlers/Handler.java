@@ -24,7 +24,7 @@ import org.apache.thrift.transport.TTransport;
 public class Handler implements Thrift.Iface {
 
     private static final ConcurrentHashMap<Integer, Vertice> HashVertice = new ConcurrentHashMap<Integer, Vertice>();
-    private int id, flagStatic = -1;
+    private int id;
     private static Node node, nodeRaiz;
     private static int numBits = 5;
 
@@ -199,37 +199,87 @@ public class Handler implements Thrift.Iface {
         }
     }
 
-    @Override
-    public boolean deleteVertice(Vertice v) throws KeyNotFound, TException {
-        Vertice vertice;
+    public boolean deleteArestasGlobal(Vertice v) throws TException {
         Aresta a;
+
+        synchronized (v) {
+            // Deleta as referências do vértice nas hashmaps. 
+            for (Integer key : v.HashAresta.keySet()) {
+                a = this.readAresta(v.HashAresta.get(key).getV1(), v.HashAresta.get(key).getV2());
+                this.deleteAresta(a);
+            }
+
+            if (Handler.HashVertice.remove(v.getNome()) != null) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /* @Override
+    public boolean deleteVertice(Vertice v) throws KeyNotFound, TException {
+        Aresta a;
+
+        deleteArestasGlobal(v);
+
+        Node aux = getSucessor(node.getId() + 1);
+        TTransport transport = null;
+        
+        while (aux.getId() != node.getId()) {
+
+            deleteArestasGlobal(v);
+            
+                transport = new TSocket(aux.getIp(), aux.getPort());
+                transport.open();
+                TProtocol protocol = new TBinaryProtocol(transport);
+                Thrift.Client client = new Thrift.Client(protocol);
+
+                // Verifica o resultado da função recursiva e retorna o valor para o cliente
+                client.deleteVertice(v);
+                transport.close();
+                aux = getSucessor(aux.getId() + 1);
+            }
+        
+        
+        return true;
+    }*/
+    
+    @Override
+public boolean deleteVertice(Vertice v) throws KeyNotFound, TException {
+        List<Vertice> Vertices = new ArrayList<>();
+        Aresta a;        
+
+        synchronized (v) {
+            for (Integer key : v.HashAresta.keySet()) {
+                a = this.readAresta(v.HashAresta.get(key).getV1(), v.HashAresta.get(key).getV2());
+                this.deleteAresta(a);
+            }
+        }
+            
+        Vertices = this.readAllVertice();
+
+        for(Vertice vertice : Vertices){
+            for(Integer keyAresta : vertice.HashAresta.keySet()){
+                if(vertice.HashAresta.get(keyAresta).getV2() == v.getNome()){
+                    this.deleteAresta(vertice.HashAresta.get(keyAresta));
+                }
+            }
+        }
+        
+        /*** GAMBIRA SUPREMA ***/
 
         Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
 
         if (aux.getId() == node.getId()) {
-
-            synchronized (v) {
-                for (Integer key : v.HashAresta.keySet()) {
-                    a = this.readAresta(v.HashAresta.get(key).getV1(), v.HashAresta.get(key).getV2());
-                    this.deleteAresta(a);
-                }
-                
-                for (Integer keyVertice : HashVertice.keySet()) {
-                    for (Integer keyAresta : HashVertice.get(keyVertice).HashAresta.keySet()) {
-                        if (HashVertice.get(keyVertice).HashAresta.get(keyAresta).getV2() == v.getNome()) {
-                            this.deleteAresta(HashVertice.get(keyVertice).HashAresta.get(keyAresta));
-                        }
-                    }
-                }
-
-                if (Handler.HashVertice.remove(v.getNome()) != null) {
-                    return true;
-                } else {
-                    return false;
-                }
-
+            if (Handler.HashVertice.remove(v.getNome()) != null) {
+                return true;
+            } else {
+                return false;
             }
-        } else {
+        }
+         
+        else {
             TTransport transport = new TSocket(aux.getIp(), aux.getPort());
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
@@ -364,13 +414,13 @@ public class Handler implements Thrift.Iface {
 
         Node aux = getSucessor(node.getId() + 1);
         TTransport transport = null;
-        
+
         while (aux.getId() != node.getId()) {
             transport = new TSocket(aux.getIp(), aux.getPort());
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
             Thrift.Client client = new Thrift.Client(protocol);
-            
+
             Arestas.addAll(client.readArestaNode());
             transport.close();
             aux = getSucessor(aux.getId() + 1);
@@ -394,31 +444,70 @@ public class Handler implements Thrift.Iface {
 
     @Override
     public boolean updateAresta(Aresta a) throws KeyNotFound, TException {
-        try {
-            Aresta aresta = this.readAresta(a.v1, a.v2);
 
-            synchronized (aresta) {
-                aresta.setDescricao(a.descricao);
-                aresta.setDirect(a.isDirect());
-                aresta.setPeso(a.getPeso());
-                return true;
+        Node aux = getSucessor(a.getV1() % (int) Math.pow(2, numBits));
+
+        if (aux.getId() == node.getId()) {
+            try {
+                Aresta aresta = this.readAresta(a.v1, a.v2);
+
+                synchronized (aresta) {
+                    aresta.setDescricao(a.descricao);
+                    aresta.setDirect(a.isDirect());
+                    aresta.setPeso(a.getPeso());
+                    return true;
+                }
+
+            } catch (KeyNotFound e) {
+                return false;
             }
+        } else {
+            TTransport transport = new TSocket(aux.getIp(), aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
 
-        } catch (KeyNotFound e) {
-            return false;
+            // Verifica o resultado da função recursiva e retorna o valor para o cliente
+            if (client.updateAresta(a)) {
+                transport.close();
+                return true;
+            } else {
+                transport.close();
+                return false;
+            }
         }
+
     }
 
     @Override
-    public boolean deleteAresta(Aresta a) throws KeyNotFound, TException {    
-        synchronized (a) {
-            Vertice v1 = this.readVertice(a.getV1());
-            Vertice v2 = this.readVertice(a.getV2());
+    public boolean deleteAresta(Aresta a) throws KeyNotFound, TException {
+        Node aux = getSucessor(a.getV1() % (int) Math.pow(2, numBits));
 
-            v1.HashAresta.remove(v2.getNome());
-            v2.HashAresta.remove(v1.getNome());
+        if (aux.getId() == node.getId()) {
 
-            return true;
+            synchronized (a) {
+                Vertice v1 = this.readVertice(a.getV1());
+                Vertice v2 = this.readVertice(a.getV2());
+
+                v1.HashAresta.remove(v2.getNome());
+                v2.HashAresta.remove(v1.getNome());
+
+                return true;
+            }
+        } else {
+            TTransport transport = new TSocket(aux.getIp(), aux.getPort());
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
+
+            // Verifica o resultado da função recursiva e retorna o valor para o cliente
+            if (client.deleteAresta(a)) {
+                transport.close();
+                return true;
+            } else {
+                transport.close();
+                return false;
+            }
         }
     }
 

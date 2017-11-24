@@ -138,6 +138,7 @@ public class Client {
                                 System.out.println("Cor: " + v.getCor());
                                 System.out.println("Descricao: " + v.getDescricao());
                                 System.out.println("Peso: " + v.getPeso());
+                                System.out.println("ID do Nó: " + v.getIdNode());
 
                                 System.out.println("\n-> Tem certeza que deseja deletar este vertice?");
                                 System.out.println("1 - SIM");
