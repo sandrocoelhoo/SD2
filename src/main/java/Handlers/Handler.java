@@ -244,42 +244,38 @@ public class Handler implements Thrift.Iface {
         
         return true;
     }*/
-    
     @Override
-public boolean deleteVertice(Vertice v) throws KeyNotFound, TException {
+    public boolean deleteVertice(Vertice v) throws KeyNotFound, TException {
         List<Vertice> Vertices = new ArrayList<>();
-        Aresta a;        
-
-        synchronized (v) {
-            for (Integer key : v.HashAresta.keySet()) {
-                a = this.readAresta(v.HashAresta.get(key).getV1(), v.HashAresta.get(key).getV2());
-                this.deleteAresta(a);
-            }
-        }
-            
-        Vertices = this.readAllVertice();
-
-        for(Vertice vertice : Vertices){
-            for(Integer keyAresta : vertice.HashAresta.keySet()){
-                if(vertice.HashAresta.get(keyAresta).getV2() == v.getNome()){
-                    this.deleteAresta(vertice.HashAresta.get(keyAresta));
-                }
-            }
-        }
-        
-        /*** GAMBIRA SUPREMA ***/
+        Aresta a;
 
         Node aux = getSucessor(v.getNome() % (int) Math.pow(2, numBits));
 
         if (aux.getId() == node.getId()) {
+
+            synchronized (v) {
+                for (Integer key : v.HashAresta.keySet()) {
+                    a = this.readAresta(v.HashAresta.get(key).getV1(), v.HashAresta.get(key).getV2());
+                    this.deleteAresta(a);
+                }
+            }
+
+            Vertices = this.readAllVertice();
+
+            for (Vertice vertice : Vertices) {
+                for (Integer keyAresta : vertice.HashAresta.keySet()) {
+                    if (vertice.HashAresta.get(keyAresta).getV2() == v.getNome()) {
+                        this.deleteAresta(vertice.HashAresta.get(keyAresta));
+                    }
+                }
+            }
+
             if (Handler.HashVertice.remove(v.getNome()) != null) {
                 return true;
             } else {
                 return false;
             }
-        }
-         
-        else {
+        } else {
             TTransport transport = new TSocket(aux.getIp(), aux.getPort());
             transport.open();
             TProtocol protocol = new TBinaryProtocol(transport);
