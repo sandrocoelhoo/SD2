@@ -515,6 +515,7 @@ public class Client {
                             for (Vertice verticeg : vertice) {
                                 System.out.println("V" + verticeg.getNome() + "|Nó: " + verticeg.getIdNode());
                             }
+                            break;
                         case 14:
                             // Finaliza a conexão com o servidor
                             System.out.println("\n==> Conexão finalizada!");
