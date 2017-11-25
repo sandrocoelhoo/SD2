@@ -512,8 +512,10 @@ public class Client {
                             Collections.reverse(vertice);
 
                             System.out.println("Menor caminho entre os vértices: " + v1 + " e " + v2);
+                            int i = 0;
                             for (Vertice verticeg : vertice) {
-                                System.out.println("V" + verticeg.getNome() + "|Nó: " + verticeg.getIdNode());
+                                System.out.println(i+":V" + verticeg.getNome() + "|Nó->" + verticeg.getIdNode());
+                                i++;
                             }
                             break;
                         case 14:
