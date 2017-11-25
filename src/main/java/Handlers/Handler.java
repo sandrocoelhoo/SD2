@@ -26,7 +26,6 @@ import org.apache.thrift.transport.TTransport;
 public class Handler implements Thrift.Iface {
 
     private static final ConcurrentHashMap<Integer, Vertice> HashVertice = new ConcurrentHashMap<Integer, Vertice>();
-    private int id;
     private static Node node, nodeRaiz;
     private static int numBits = 5;
 
@@ -338,7 +337,7 @@ public class Handler implements Thrift.Iface {
         if (aresta != null) {
             return aresta;
         }
-
+        
         throw new KeyNotFound();
 
     }
@@ -541,7 +540,6 @@ public class Handler implements Thrift.Iface {
                 transport.open();
                 TProtocol protocol = new TBinaryProtocol(transport);
                 Chord.Client client = new Chord.Client(protocol);
-                System.out.println("\t $$$$$$$$ antes do preceding");
                 aux = client.closestPrecedingFinger(id);
                 transport.close();
             } else {
@@ -594,10 +592,8 @@ public class Handler implements Thrift.Iface {
         TProtocol protocol = null;
         Chord.Client client = null;
         fingerAux = node.getFt().get(0); // Pega o primeiro campo da FT do nó local [sucessor]
-        System.out.println("\t #####3 ESTABILIZAÇÃO");
 
         if (fingerAux.getId() != node.getId()) {
-            System.out.println(" ESTABILIZAÇÃO");
             transport = new TSocket(fingerAux.getIp(), fingerAux.getPort());
             transport.open();
             protocol = new TBinaryProtocol(transport);
@@ -771,67 +767,7 @@ public class Handler implements Thrift.Iface {
 
     }
 
-    /* public List<Vertice> menorCaminhoVertIgual(int v1, int v2) throws TException {
-        if (v1 == v2) {
-            ArrayList<Vertice> vertice = new ArrayList<>();
-            vertice.add(readVertice(v1));
-            return vertice;
-        } else {
-            return menorCaminhoVertDif(v1, v2, new ArrayList<>());
-        }
-
-    }
-
-    public List<Vertice> menorCaminhoVertDif(int v1, int v2, List<Vertice> visit) throws TException {
-        Node aux = getSucessor(v1 % (int) Math.pow(2, numBits));
-        TTransport transport = new TSocket(aux.getIp(), aux.getPort());
-
-        if (aux.getId() == node.getId()) {
-            ArrayList<Vertice> menorCaminho = new ArrayList<>();
-            ArrayList<Vertice> atual = new ArrayList<>();
-            ArrayList<Integer> servers = new ArrayList<>();
-
-            atual.addAll(visit);
-            atual.add(readVertice(v1));
-
-            for (Vertice v : readVerticeNeighboors(readVertice(v1))) {
-
-                if (!visit.contains(v)) {
-                    ArrayList<Vertice> auxCaminho;
-
-                    if (v.getNome() == v2) {
-                        auxCaminho = atual;
-                        auxCaminho.add(v);
-                    } else {
-                        auxCaminho = (ArrayList<Vertice>) menorCaminhoVertDif(v.getNome(), v2, atual);
-                    }
-
-                    if (!auxCaminho.isEmpty() && ((menorPeso(auxCaminho) < menorPeso(menorCaminho) || menorCaminho.isEmpty()))) {
-                        menorCaminho = auxCaminho;
-                    }
-                }
-            }
-            return menorCaminho;
-        } else {
-            transport.open();
-            TProtocol protocol = new TBinaryProtocol(transport);
-            Thrift.Client client = new Thrift.Client(protocol);
-            return client.menorCaminhoVertDif(v1, v2, visit);
-            //transport.close();
-        }
-    }*/
-    public double menorPeso(List<Vertice> list) {
-        double peso = 99999999;
-
-        for (Vertice vertice : list) {
-            if (vertice.getPeso() < peso) {
-                peso = vertice.getPeso();
-            }
-        }
-
-        return peso;
-    }
-
+    @Override
     public int procuraMenorDistancia(Map<Integer, Double> dist, Map<Integer, Integer> visitado, List<Vertice> vertices) {
         int i, menor = -1;
         boolean primeiro = true;
@@ -851,6 +787,7 @@ public class Handler implements Thrift.Iface {
         return menor;
     }
 
+    @Override
     public List<Vertice> menorCaminho(int ini, int fim, Map<Integer, Integer> ant, Map<Integer, Double> dist) throws TException {
         int i, cont, NV, ind, u;
 

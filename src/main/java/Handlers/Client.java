@@ -5,7 +5,10 @@ import Grafo.KeyNotFound;
 import Grafo.Thrift;
 import Grafo.Vertice;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.thrift.TException;
@@ -59,7 +62,8 @@ public class Client {
                     System.out.println("10 - Ler unica aresta ");
                     System.out.println("11 - Ler todas as arestas do grafo");
                     System.out.println("12 - Ler todas as arestas de um vertice");
-                    System.out.println("13 - Finalizar conexão");
+                    System.out.println("13 - Menor Caminho entre Vertices");
+                    System.out.println("14 - Finalizar conexão");
                     System.out.print("Opcao-> ");
                     opcao = sc.nextInt();
 
@@ -235,53 +239,53 @@ public class Client {
                             }
                             break;
                         case 7:
-                            try{
-                            System.out.println("\n@@@@@ ADICIONAR ARESTA @@@@@ \n");
-                            System.out.print("Nome do 1º vertice-> ");
-                            v1 = sc.nextInt();
-                            sc.nextLine();
-                            
-                            v = client.readVertice(v1);
+                            try {
+                                System.out.println("\n@@@@@ ADICIONAR ARESTA @@@@@ \n");
+                                System.out.print("Nome do 1º vertice-> ");
+                                v1 = sc.nextInt();
+                                sc.nextLine();
 
-                            System.out.print("Nome do 2º vertice-> ");
-                            v2 = sc.nextInt();
-                            sc.nextLine();
-                            System.out.println("-------------------");
+                                v = client.readVertice(v1);
 
-                            v = client.readVertice(v2);
-                            
-                            System.out.print("Peso da aresta-> ");
-                            peso = sc.nextDouble();
-                            sc.nextLine();
-                            System.out.print("Descricao da aresta-> ");
-                            descricao = sc.nextLine();
-                            System.out.print("Vertice direcionada? -> ");
-                            direct = sc.nextBoolean();
-                            sc.nextLine();
+                                System.out.print("Nome do 2º vertice-> ");
+                                v2 = sc.nextInt();
+                                sc.nextLine();
+                                System.out.println("-------------------");
 
-                            a.setV1(v1);
-                            a.setV2(v2);
-                            a.setPeso(peso);
-                            a.setDescricao(descricao);
-                            a.setDirect(direct);
+                                v = client.readVertice(v2);
 
-                            if (client.addAresta(a)) {
-                                System.out.println("# Aresta entre os vertices V" + v1 + " e V" + v2 + " adicionada!");
+                                System.out.print("Peso da aresta-> ");
+                                peso = sc.nextDouble();
+                                sc.nextLine();
+                                System.out.print("Descricao da aresta-> ");
+                                descricao = sc.nextLine();
+                                System.out.print("Vertice direcionada? -> ");
+                                direct = sc.nextBoolean();
+                                sc.nextLine();
 
-                                if (direct == false) {
-                                    a.setV1(v2);
-                                    a.setV2(v1);
+                                a.setV1(v1);
+                                a.setV2(v2);
+                                a.setPeso(peso);
+                                a.setDescricao(descricao);
+                                a.setDirect(direct);
 
-                                    if (client.addAresta(a)) {
-                                        System.out.println("# Aresta espelhada entre os vertices V" + v2 + " e V" + v1 + " adicionada!");
-                                    } else {
-                                        System.out.println("# Nao foi possivel inserir outra aresta espelhada");
+                                if (client.addAresta(a)) {
+                                    System.out.println("# Aresta entre os vertices V" + v1 + " e V" + v2 + " adicionada!");
+
+                                    if (direct == false) {
+                                        a.setV1(v2);
+                                        a.setV2(v1);
+
+                                        if (client.addAresta(a)) {
+                                            System.out.println("# Aresta espelhada entre os vertices V" + v2 + " e V" + v1 + " adicionada!");
+                                        } else {
+                                            System.out.println("# Nao foi possivel inserir outra aresta espelhada");
+                                        }
                                     }
+                                } else {
+                                    System.out.println("# Problema na insercao da aresta. Repita a operacao.");
                                 }
-                            } else {
-                                System.out.println("# Problema na insercao da aresta. Repita a operacao.");
-                            }
-                                
+
                             } catch (KeyNotFound e) {
                                 System.out.println("Dado nao encontrado no grafo.");
                             }
@@ -487,6 +491,31 @@ public class Client {
                             }
                             break;
                         case 13:
+                            System.out.println("\n@@@@@ MENOR CAMINHO ENTRE VERTICES @@@@@ \n");
+                            System.out.print("Nome do vertice 1-> ");
+                            v1 = sc.nextInt();
+                            sc.nextLine();
+
+                            client.readVertice(v1);
+
+                            System.out.print("Nome do vertice 2-> ");
+                            v2 = sc.nextInt();
+                            sc.nextLine();
+
+                            client.readVertice(v2);
+
+                            HashMap<Integer, Integer> ant = new HashMap<>();
+                            HashMap<Integer, Double> dist = new HashMap<>();
+                            List<Vertice> vertice = new ArrayList<>();
+
+                            vertice = client.menorCaminho(v1, v2, ant, dist);
+                            Collections.reverse(vertice);
+
+                            System.out.println("Menor caminho entre os vértices: " + v1 + " e " + v2);
+                            for (Vertice verticeg : vertice) {
+                                System.out.println("V" + verticeg.getNome() + "|Nó: " + verticeg.getIdNode());
+                            }
+                        case 14:
                             // Finaliza a conexão com o servidor
                             System.out.println("\n==> Conexão finalizada!");
                             transport.close();
