@@ -65,5 +65,7 @@ service Thrift extends Chord{
 	bool updateAresta(1:Aresta a) throws (1:KeyNotFound knf),
 	bool deleteAresta(1:Aresta a) throws (1:KeyNotFound knf), 
 	list<Vertice> readVerticeNode() throws (1:KeyNotFound knf),
-	list<Aresta> readArestaNode() throws (1:KeyNotFound knf)
+	list<Aresta> readArestaNode() throws (1:KeyNotFound knf),
+	i32 procuraMenorDistancia(1:Map<Integer,Double> dist, 2:Map<Integer,Integer> visitado,3:list<Vertice> vertices),
+	list<Vertice> menorCaminho(1:i32 ini,2:i32 fim, 3:map<Integer,Integer> ant, 4:map<Integer,Double> dist) throws (1:KeyNotFound knf)
 }

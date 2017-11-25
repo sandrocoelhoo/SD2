@@ -8,7 +8,9 @@ import Grafo.Node;
 import Grafo.Thrift;
 import Grafo.Vertice;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -199,51 +201,6 @@ public class Handler implements Thrift.Iface {
         }
     }
 
-    public boolean deleteArestasGlobal(Vertice v) throws TException {
-        Aresta a;
-
-        synchronized (v) {
-            // Deleta as referências do vértice nas hashmaps. 
-            for (Integer key : v.HashAresta.keySet()) {
-                a = this.readAresta(v.HashAresta.get(key).getV1(), v.HashAresta.get(key).getV2());
-                this.deleteAresta(a);
-            }
-
-            if (Handler.HashVertice.remove(v.getNome()) != null) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-
-    /* @Override
-    public boolean deleteVertice(Vertice v) throws KeyNotFound, TException {
-        Aresta a;
-
-        deleteArestasGlobal(v);
-
-        Node aux = getSucessor(node.getId() + 1);
-        TTransport transport = null;
-        
-        while (aux.getId() != node.getId()) {
-
-            deleteArestasGlobal(v);
-            
-                transport = new TSocket(aux.getIp(), aux.getPort());
-                transport.open();
-                TProtocol protocol = new TBinaryProtocol(transport);
-                Thrift.Client client = new Thrift.Client(protocol);
-
-                // Verifica o resultado da função recursiva e retorna o valor para o cliente
-                client.deleteVertice(v);
-                transport.close();
-                aux = getSucessor(aux.getId() + 1);
-            }
-        
-        
-        return true;
-    }*/
     @Override
     public boolean deleteVertice(Vertice v) throws KeyNotFound, TException {
         List<Vertice> Vertices = new ArrayList<>();
@@ -812,6 +769,145 @@ public class Handler implements Thrift.Iface {
             }
         }
 
+    }
+
+    /* public List<Vertice> menorCaminhoVertIgual(int v1, int v2) throws TException {
+        if (v1 == v2) {
+            ArrayList<Vertice> vertice = new ArrayList<>();
+            vertice.add(readVertice(v1));
+            return vertice;
+        } else {
+            return menorCaminhoVertDif(v1, v2, new ArrayList<>());
+        }
+
+    }
+
+    public List<Vertice> menorCaminhoVertDif(int v1, int v2, List<Vertice> visit) throws TException {
+        Node aux = getSucessor(v1 % (int) Math.pow(2, numBits));
+        TTransport transport = new TSocket(aux.getIp(), aux.getPort());
+
+        if (aux.getId() == node.getId()) {
+            ArrayList<Vertice> menorCaminho = new ArrayList<>();
+            ArrayList<Vertice> atual = new ArrayList<>();
+            ArrayList<Integer> servers = new ArrayList<>();
+
+            atual.addAll(visit);
+            atual.add(readVertice(v1));
+
+            for (Vertice v : readVerticeNeighboors(readVertice(v1))) {
+
+                if (!visit.contains(v)) {
+                    ArrayList<Vertice> auxCaminho;
+
+                    if (v.getNome() == v2) {
+                        auxCaminho = atual;
+                        auxCaminho.add(v);
+                    } else {
+                        auxCaminho = (ArrayList<Vertice>) menorCaminhoVertDif(v.getNome(), v2, atual);
+                    }
+
+                    if (!auxCaminho.isEmpty() && ((menorPeso(auxCaminho) < menorPeso(menorCaminho) || menorCaminho.isEmpty()))) {
+                        menorCaminho = auxCaminho;
+                    }
+                }
+            }
+            return menorCaminho;
+        } else {
+            transport.open();
+            TProtocol protocol = new TBinaryProtocol(transport);
+            Thrift.Client client = new Thrift.Client(protocol);
+            return client.menorCaminhoVertDif(v1, v2, visit);
+            //transport.close();
+        }
+    }*/
+    public double menorPeso(List<Vertice> list) {
+        double peso = 99999999;
+
+        for (Vertice vertice : list) {
+            if (vertice.getPeso() < peso) {
+                peso = vertice.getPeso();
+            }
+        }
+
+        return peso;
+    }
+
+    public int procuraMenorDistancia(Map<Integer, Double> dist, Map<Integer, Integer> visitado, List<Vertice> vertices) {
+        int i, menor = -1;
+        boolean primeiro = true;
+
+        for (Vertice v : vertices) {
+            if (dist.get(v.getNome()) >= 0 && visitado.get(v.getNome()) == 0) {
+                if (primeiro) {
+                    menor = v.getNome();
+                    primeiro = false;
+                } else {
+                    if (dist.get(menor) > dist.get(v.getNome())) {
+                        menor = v.getNome();
+                    }
+                }
+            }
+        }
+        return menor;
+    }
+
+    public List<Vertice> menorCaminho(int ini, int fim, Map<Integer, Integer> ant, Map<Integer, Double> dist) throws TException {
+        int i, cont, NV, ind, u;
+
+        List<Vertice> vertices = readAllVertice();
+        HashMap<Integer, Vertice> verticesG = new HashMap<>();
+        HashMap<Integer, Integer> visitado = new HashMap<>();
+
+        cont = NV = vertices.size();
+
+        for (Vertice v : vertices) {
+            verticesG.put(v.getNome(), v);
+            visitado.put(v.getNome(), 0);
+            ant.put(v.getNome(), -1);
+            dist.put(v.getNome(), -1.0);
+        }
+
+        dist.replace(ini, 0.0);
+
+        while (cont > 0) {
+            u = procuraMenorDistancia(dist, visitado, vertices);
+            if (u == -1) {
+                break;
+            }
+
+            Vertice v = readVertice(u);
+            visitado.replace(u, 1);
+            cont--;
+
+            List<Vertice> list = readVerticeNeighboors(v);
+
+            for (i = 0; i < list.size(); i++) {
+                ind = list.get(i).getNome();
+
+                Aresta ar = readAresta(u, ind);
+                if (dist.get(ind) < 0) {
+                    dist.replace(ind, dist.get(u) + ar.getPeso());
+                    ant.replace(ind, u);
+                } else {
+                    if (dist.get(ind) > dist.get(u) + ar.getPeso()) {
+                        dist.replace(ind, dist.get(u) + ar.getPeso());
+                        ant.replace(ind, u);
+                    }
+                }
+            }
+        }
+
+        List<Vertice> resp = new ArrayList<>();
+        int v = fim;
+        while (v != ini) {
+            resp.add(verticesG.get(v));
+            v = ant.get(v);
+            if (v == ini) {
+                resp.add(verticesG.get(v));
+            }
+        }
+
+        return resp;
     }
 
 }
